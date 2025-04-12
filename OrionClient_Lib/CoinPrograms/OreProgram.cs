@@ -49,7 +49,7 @@ namespace OrionClientLib.CoinPrograms
         public static PublicKey MintId;
         //public static PublicKey BoostDirectoryId;
 
-        public static PublicKey ProgramId = new PublicKey("oreV2ZymfyeXgNgBdqMkumTqqAprVqgBWQfoYkrtKWQ");
+        public static PublicKey ProgramId = new PublicKey("EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd"); // ore program on eclipse
         public static readonly PublicKey NoopId = new PublicKey("noop8ytexvkpCuqbf6FB89BSuNemHtPRqaNC31GWivW");
         public static readonly PublicKey BoostProgramId = new PublicKey("BoostzzkNfCA9D1qNuN5xZxB5ErbK4zQuBeTHGDpXT1");
         public static readonly PublicKey BoostAuthority = new PublicKey("HBUh9g46wk2X89CvaNN15UmsznP59rh6od1h8JwYAopk");
