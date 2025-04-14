@@ -45,14 +45,14 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         public override KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings)
         {
             int iterationCount = maxNonces * (ushort.MaxValue + 1);
-            int groupSize = settings.GPUSetting.GPUBlockSize;
+            int groupSize = 128;
 
             var g = Math.Log2(groupSize);
 
             //Invalid setting
             if ((int)g != g)
             {
-                groupSize = 512;
+                groupSize = 128;
             }
 
             groupSize = Math.Min(groupSize, 128);
