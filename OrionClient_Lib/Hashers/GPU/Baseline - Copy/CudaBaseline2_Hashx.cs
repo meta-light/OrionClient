@@ -110,33 +110,33 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Multiply
                 var multInstruction_1 = LoadMultInstruction(ref startInstruction, 0);
                 LoadTargetInstruction();
+                var multInstruction_preTarget = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 1 + BasicInstruction.Size * 0);
 
                 Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
 
                 //Add some more that don't get loaded twice
-                var multInstruction_2 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 1 + BasicInstruction.Size * 0);
+                var basicInstruction_preTarget = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 0);
 
             target:
-                var basicInstruction_1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 0);
-                var basicInstruction_2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 1);
-                multInstruction_1 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 2);
+                var basicInstruction_preTarget2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 1);
+                var multInstruction_preTarget2 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 2);
 
                 //Multiply
-                Store(idx, registers, multInstruction_2.Dst, LoadRegister(idx, registers, multInstruction_2.Src) * LoadRegister(idx, registers, multInstruction_2.Dst));
+                Store(idx, registers, multInstruction_preTarget.Dst, LoadRegister(idx, registers, multInstruction_preTarget.Src) * LoadRegister(idx, registers, multInstruction_preTarget.Dst));
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget.Dst, BasicOperation(idx, basicInstruction_preTarget.Type, basicInstruction_preTarget.Dst, basicInstruction_preTarget.Src, basicInstruction_preTarget.Operand, registers));
 
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 2);
+                var basicInstruction_1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 2);
                 //Mult instruction 2 here
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget2.Dst, BasicOperation(idx, basicInstruction_preTarget2.Type, basicInstruction_preTarget2.Dst, basicInstruction_preTarget2.Src, basicInstruction_preTarget2.Operand, registers));
 
                 //Multiply
-                Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
+                Store(idx, registers, multInstruction_preTarget2.Dst, LoadRegister(idx, registers, multInstruction_preTarget2.Src) * LoadRegister(idx, registers, multInstruction_preTarget2.Dst));
 
-                basicInstruction_2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 3);
+                var basicInstruction_2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 3);
                 multInstruction_1 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 4);
 
                 //Basic Opt
