@@ -1,6 +1,6 @@
 using NLog;
 using OrionClientLib.CoinPrograms.Ore;
-using OrionClientLib.Modules.SettingData;
+using OrionClientLib.Modules.SettingsData;
 using Solnet.Programs;
 using Solnet.Programs.Abstract;
 using Solnet.Programs.Utilities;
@@ -228,7 +228,7 @@ namespace OrionClientLib.CoinPrograms
 
         public static PublicKey DeriveBoost(PublicKey mint)
         {
-            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("boost"), mint.KeyBytes }, BoostProgramId, out PublicKey address, out byte nonce))
+            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("boost"), mint.KeyBytes }, ProgramId, out PublicKey address, out byte nonce))
             {
                 return address;
             }
@@ -238,7 +238,7 @@ namespace OrionClientLib.CoinPrograms
 
         public static PublicKey DeriveCheckpoint(PublicKey boost)
         {
-            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("checkpoint"), boost.KeyBytes }, BoostProgramId, out PublicKey address, out byte nonce))
+            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("checkpoint"), boost.KeyBytes }, ProgramId, out PublicKey address, out byte nonce))
             {
                 return address;
             }
@@ -248,7 +248,7 @@ namespace OrionClientLib.CoinPrograms
 
         public static PublicKey DeriveStakeAccount(PublicKey boost, PublicKey authority)
         {
-            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("stake"), authority.KeyBytes, boost.KeyBytes }, BoostProgramId, out PublicKey address, out byte nonce))
+            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("stake"), authority.KeyBytes, boost.KeyBytes }, ProgramId, out PublicKey address, out byte nonce))
             {
                 return address;
             }

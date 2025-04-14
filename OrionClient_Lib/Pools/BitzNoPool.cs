@@ -1,6 +1,7 @@
 using OrionClientLib.Hashers.Models;
 using OrionClientLib.Modules.SettingsData;
 using OrionClientLib.Pools.Models;
+using OrionClientLib.CoinPrograms;
 using Solnet.Rpc;
 using Solnet.Wallet;
 using System;
