@@ -1,8 +1,10 @@
 using NLog;
 using OrionClientLib.CoinPrograms.Ore;
+using OrionClientLib.Modules.SettingData;
 using Solnet.Programs;
 using Solnet.Programs.Abstract;
 using Solnet.Programs.Utilities;
+using Solnet.Rpc;
 using Solnet.Rpc.Models;
 using Solnet.Wallet;
 using System;
@@ -48,10 +50,11 @@ namespace OrionClientLib.CoinPrograms
         public static PublicKey ProgramId = new PublicKey("EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd"); // Bitz Program ID
         public static readonly PublicKey NoopId = new PublicKey("F1ULBrY2Tjsmb1L4Wt4vX6UtiWRikLoRFWooSpxMM6nR"); // Bitz Noop ID
 
-        public static readonly string[] EclipseRPCs = ["https://bitz-000.eclipserpc.xyz/", "https://mainnetbeta-rpc.eclipse.xyz/", "https://eclipse.helius-rpc.com/"]; // these are the 3 compatible public RPCs for Bitz
-
         public static readonly double BitzDecimals = Math.Pow(10, 11); //remains unchanged from ORE
         private static readonly byte[] MintNoise = new byte[] { 89, 157, 88, 232, 243, 249, 197, 132, 199, 49, 19, 234, 91, 94, 150, 41 };
+
+        private static IRpcClient _rpcClient;
+        private static IStreamingRpcClient _streamingClient;
 
         static BitzProgram()
         {
@@ -66,18 +69,40 @@ namespace OrionClientLib.CoinPrograms
             for (int i = 0; i < BusIds.Length; i++)
             {
                 PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("bus"), new byte[] { (byte)i } }, ProgramId, out var publicKey, out byte nonce);
-
                 BusIds[i] = publicKey;
             }
 
             TreasuryId = new PublicKey("Feh8eCUQaHGfdPyGEARmVse3m4NBGgaVYwMiKE3CdcPz"); // Bitz Treasury Address
-
             MintId = new PublicKey("64mggk2nXg6vHC1qCdsZdEFzd5QGN4id54Vbho4PswCF"); // Bitz Token Mint Address
 
-            PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("config") }, ProgramId, out b, out n); // was unsure how to find this address
+            PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("config") }, ProgramId, out var b, out var n);
             ConfigAddress = b;
 
             TreasuryATAId = new PublicKey("BHbThAP7qggM34iznUGwwC23jUtNaFRz5DrPxMGr56bS"); // Bitz Treasury ATA Address
+        }
+
+        public static void SetRpcClient(string rpcUrl)
+        {
+            _rpcClient = ClientFactory.GetClient(rpcUrl);
+            _streamingClient = ClientFactory.GetStreamingClient(rpcUrl.Replace("http", "ws"));
+        }
+
+        public static IRpcClient GetRpcClient()
+        {
+            if (_rpcClient == null)
+            {
+                SetRpcClient(BitzRPCSettings.DefaultRPC);
+            }
+            return _rpcClient;
+        }
+
+        public static IStreamingRpcClient GetStreamingRpcClient()
+        {
+            if (_streamingClient == null)
+            {
+                SetRpcClient(BitzRPCSettings.DefaultRPC);
+            }
+            return _streamingClient;
         }
 
         public static (PublicKey key, uint nonce) GetProofKey(PublicKey signer, PublicKey programId)

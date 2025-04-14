@@ -1,5 +1,7 @@
 using OrionClientLib.Hashers.Models;
+using OrionClientLib.Modules.SettingsData;
 using OrionClientLib.Pools.Models;
+using Solnet.Rpc;
 using Solnet.Wallet;
 using System;
 using System.Collections.Generic;
@@ -9,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools
 {
-   public class NoPool : IPool
+   public class BitzNoPool : IPool
    {
        public string Name { get; } = "Bitz Solo";
        public string DisplayName { get; } = "Bitz Solo";
@@ -40,11 +42,13 @@ namespace OrionClientLib.Pools
        private ulong _endNonce;
        private double _miningRewards = 0;
        private double _walletBalance = 0;
+       private IRpcClient _rpcClient;
 
        public void SetWalletInfo(Wallet wallet, string publicKey)
        {
            _wallet = wallet;
            _publicKey = publicKey;
+           _rpcClient = BitzProgram.GetRpcClient();
        }
 
        public async Task<bool> ConnectAsync(CancellationToken token)
@@ -90,7 +94,7 @@ namespace OrionClientLib.Pools
 
        public void DifficultyFound(DifficultyInfo info)
        {
-
+           // Handle difficulty found
        }
 
        private void GenerateNewChallenge()
