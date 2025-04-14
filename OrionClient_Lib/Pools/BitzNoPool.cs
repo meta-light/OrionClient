@@ -13,10 +13,10 @@ namespace OrionClientLib.Pools
    {
        public string Name { get; } = "Bitz Solo";
        public string DisplayName { get; } = "Bitz Solo";
-       public string Description { get; } = "Bitz Solo mining. [red]Not recommended[/] due to transaction fees";
+       public string Description { get; } = "Bitz Solo Mining";
        public string ArgName { get; } = "bitzsolo";
        public bool HideOnPoolList { get; } = false;
-       public Coin Coins { get; } = Coin.Ore;
+       public Coin Coins { get; } = Coin.Bitz;
        public bool RequiresKeypair { get; } = true;
 
        public Dictionary<string, string> Features => new Dictionary<string, string>
