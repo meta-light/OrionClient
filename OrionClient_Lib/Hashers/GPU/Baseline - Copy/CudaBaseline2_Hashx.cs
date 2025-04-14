@@ -130,10 +130,10 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 Store(idx, registers, basicInstruction.Dst, BasicOperation(idx, basicInstruction.Type, basicInstruction.Dst, basicInstruction.Src, basicInstruction.Operand, registers));
 
                 //Multiply
+                basicInstruction = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 2);
                 Store(idx, registers, instruction.Dst, LoadRegister(idx, registers, instruction.Src) * LoadRegister(idx, registers, instruction.Dst));
 
                 //Basic Opt
-                basicInstruction = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 2);
                 Store(idx, registers, basicInstruction.Dst, BasicOperation(idx, basicInstruction.Type, basicInstruction.Dst, basicInstruction.Src, basicInstruction.Operand, registers));
 
                 //Basic Opt
@@ -177,11 +177,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 instruction = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 7);
                 Store(idx, registers, basicInstruction.Dst, BasicOperation(idx, basicInstruction.Type, basicInstruction.Dst, basicInstruction.Src, basicInstruction.Operand, registers));
 
-                //if (i == 15)
-                //{
-                //    Interop.WriteLine("{8}, {9}, {10}, {11}\n{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}\n", registers.V0, registers.V1, registers.V2, registers.V3, registers.V4, registers.V5, registers.V6, registers.V7, basicInstruction.Dst, basicInstruction.Src, basicInstruction.Type, basicInstruction.Operand);
-                //}
-
                 //Multiply
                 Store(idx, registers, instruction.Dst, LoadRegister(idx, registers, instruction.Src) * LoadRegister(idx, registers, instruction.Dst));
 
@@ -200,14 +195,13 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                 //Branch
 
-                if ((branchOp & mulhResult) == 0 && allowBranch)
+                if (allowBranch && (branchOp & mulhResult) == 0)
                 {
                     allowBranch = false;
 
                     goto target;
                 }
 
-                Group.Barrier();
 
                 //Multiply
                 instruction = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
@@ -276,7 +270,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Basic Opt
                 basicInstruction = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 10 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 17);
                 Store(idx, registers, basicInstruction.Dst, BasicOperation(idx, basicInstruction.Type, basicInstruction.Dst, basicInstruction.Src, basicInstruction.Operand, registers));
-
             }
 
             return Digest(idx, registers, key);
