@@ -444,7 +444,7 @@ namespace OrionClientLib.Hashers
         public abstract KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings);
         public abstract Action<ArrayView<ulong>, ArrayView<EquixSolution>, ArrayView<ushort>, ArrayView<uint>> EquihashKernel();
         public abstract KernelConfig GetEquihashKernelConfig(Device device, int maxNonces, Settings settings);
-        public abstract CudaCacheConfiguration CudaCacheOption();
+        public abstract (CudaCacheConfiguration, CudaCacheConfiguration) CudaCacheOption();
 
         public bool IsSupported()
         {
@@ -582,7 +582,8 @@ namespace OrionClientLib.Hashers
             private KernelConfig _hashxConfig;
             private KernelConfig _equihashConfig;
             private HasherInfo _hasherInfo = new HasherInfo();
-
+            private CudaCacheConfiguration _hashxCacheConfiguration;
+            private CudaCacheConfiguration _equihashCacheConfiguration;
 
             private List<GPUDeviceData> _deviceData = new List<GPUDeviceData>();
 
@@ -621,7 +622,7 @@ namespace OrionClientLib.Hashers
                          BlockingCollection<CPUData> availableCPUData,
                          KernelConfig hashxConfig,
                          KernelConfig equihashConfig,
-                         CudaCacheConfiguration cacheConfiguration)
+                         (CudaCacheConfiguration hashxCacheConfiguration, CudaCacheConfiguration equihashCacheConfiguration) cacheOptions)
             {
                 _hashxMethod = hashxKernel;
                 _equihashMethod = equihashKernel;
@@ -632,13 +633,8 @@ namespace OrionClientLib.Hashers
                 _accelerator = accelerator;
                 _hashxConfig = hashxConfig;
                 _equihashConfig = equihashConfig;
-
-                if(accelerator is CudaAccelerator cudaAccelerator)
-                {
-                    //Equihash is better with equal or L1 preference
-                    //Baseline suffers with L1 preference
-                    cudaAccelerator.CacheConfiguration = cacheConfiguration;
-                }
+                _hashxCacheConfiguration = cacheOptions.hashxCacheConfiguration;
+                _equihashCacheConfiguration = cacheOptions.equihashCacheConfiguration;
             }
 
             public async void Initialize(int totalNonces)
@@ -672,6 +668,22 @@ namespace OrionClientLib.Hashers
 
                 _hashxKernel = _accelerator.LoadStreamKernel(_hashxMethod);
                 _equihashKernel = _accelerator.LoadStreamKernel(_equihashMethod);
+
+                if(_hashxKernel.TryGetKernel(out var kernel))
+                {
+                    if (kernel is CudaKernel cudaKernel)
+                    {
+                        CudaAPI.CurrentAPI.SetFuncCacheConfig(cudaKernel.FunctionPtr, _hashxCacheConfiguration);
+                    }
+                }
+
+                if (_equihashKernel.TryGetKernel(out kernel))
+                {
+                    if (kernel is CudaKernel cudaKernel)
+                    {
+                        CudaAPI.CurrentAPI.SetFuncCacheConfig(cudaKernel.FunctionPtr, _equihashCacheConfiguration);
+                    }
+                }
 
                 _logger.Log(LogLevel.Debug, $"Initialized GPU device: {_device.Name} [{_deviceId}]");
             }

@@ -70,9 +70,9 @@ namespace OrionClientLib.Hashers.GPU.RTX4090Opt
                 );
         }
 
-        public override CudaCacheConfiguration CudaCacheOption()
+        public override (CudaCacheConfiguration, CudaCacheConfiguration) CudaCacheOption()
         {
-            return CudaCacheConfiguration.PreferL1;
+            return (CudaCacheConfiguration.Default, CudaCacheConfiguration.PreferL1);
         }
     }
 }

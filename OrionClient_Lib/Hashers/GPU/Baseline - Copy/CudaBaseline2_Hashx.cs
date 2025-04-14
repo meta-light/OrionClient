@@ -203,7 +203,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                     goto target;
                 }
 
-
                 //Multiply
                 multInstruction_1 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
                 basicInstruction_1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);

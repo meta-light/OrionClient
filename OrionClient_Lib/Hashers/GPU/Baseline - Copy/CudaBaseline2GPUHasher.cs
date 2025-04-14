@@ -74,9 +74,9 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 );
         }
 
-        public override CudaCacheConfiguration CudaCacheOption()
+        public override (CudaCacheConfiguration, CudaCacheConfiguration) CudaCacheOption()
         {
-            return CudaCacheConfiguration.PreferShared;
+            return (CudaCacheConfiguration.PreferShared, CudaCacheConfiguration.PreferL1);
         }
     }
 }
