@@ -101,6 +101,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             registers = SipHash24Ctr(idx, key, input, registers);
             bool allowBranch = true;
 
+            
             for (int i = 0; i < 16; i++)
             {
                 //ArrayView<int> startInstruction = program.SubView(i * Instruction.Size, Instruction.Size);
@@ -114,12 +115,22 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                 Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
 
-                //Add some more that don't get loaded twice
-                var basicInstruction_preTarget = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 0);
+                //Warp.Barrier();
 
-            target:
+                //Got a lot of extra registers
+                var basicInstruction_preTarget = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 0);
                 var basicInstruction_preTarget2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 1);
                 var multInstruction_preTarget2 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 2);
+                var basicInstruction_preTarget3 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 2);
+                var basicInstruction_preTarget4 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 3);
+                var multInstruction_preTarget3 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 4);
+                var basicInstruction_preTarget5 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + BasicInstruction.Size * 4);
+                var basicInstruction_preTarget6 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + BasicInstruction.Size * 5);
+                var highMulInstruction_preTarget1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 0 + BasicInstruction.Size * 6);
+                var basicInstruction_preTarget7 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 6);
+                var multInstruction_preTarget4 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 7);
+
+            target:
 
                 //Multiply
                 Store(idx, registers, multInstruction_preTarget.Dst, LoadRegister(idx, registers, multInstruction_preTarget.Src) * LoadRegister(idx, registers, multInstruction_preTarget.Dst));
@@ -127,98 +138,91 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Basic Opt
                 Store(idx, registers, basicInstruction_preTarget.Dst, BasicOperation(idx, basicInstruction_preTarget.Type, basicInstruction_preTarget.Dst, basicInstruction_preTarget.Src, basicInstruction_preTarget.Operand, registers));
 
-                var basicInstruction_1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 2);
-                //Mult instruction 2 here
-
                 //Basic Opt
                 Store(idx, registers, basicInstruction_preTarget2.Dst, BasicOperation(idx, basicInstruction_preTarget2.Type, basicInstruction_preTarget2.Dst, basicInstruction_preTarget2.Src, basicInstruction_preTarget2.Operand, registers));
 
                 //Multiply
                 Store(idx, registers, multInstruction_preTarget2.Dst, LoadRegister(idx, registers, multInstruction_preTarget2.Src) * LoadRegister(idx, registers, multInstruction_preTarget2.Dst));
 
-                var basicInstruction_2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 3);
-                multInstruction_1 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 4);
+                //Basic Opt
+                Store(idx, registers, basicInstruction_preTarget3.Dst, BasicOperation(idx, basicInstruction_preTarget3.Type, basicInstruction_preTarget3.Dst, basicInstruction_preTarget3.Src, basicInstruction_preTarget3.Operand, registers));
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
-
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + BasicInstruction.Size * 4);
-
-                //Basic Opt
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget4.Dst, BasicOperation(idx, basicInstruction_preTarget4.Type, basicInstruction_preTarget4.Dst, basicInstruction_preTarget4.Src, basicInstruction_preTarget4.Operand, registers));
 
                 //Multiply
-                Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
+                Store(idx, registers, multInstruction_preTarget3.Dst, LoadRegister(idx, registers, multInstruction_preTarget3.Src) * LoadRegister(idx, registers, multInstruction_preTarget3.Dst));
+
+                var basicInstruction_preTarget8 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 7);
+                var basicInstruction_preTarget9 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 8);
+                var multInstruction_preTarget5 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
+                var branchInstruction = LoadBranchInstruction(ref startInstruction, MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget5.Dst, BasicOperation(idx, basicInstruction_preTarget5.Type, basicInstruction_preTarget5.Dst, basicInstruction_preTarget5.Src, basicInstruction_preTarget5.Operand, registers));
 
                 //Basic Opt
-                basicInstruction_2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + BasicInstruction.Size * 5);
-                var highMulInstruction = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 0 + BasicInstruction.Size * 6);
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget6.Dst, BasicOperation(idx, basicInstruction_preTarget6.Type, basicInstruction_preTarget6.Dst, basicInstruction_preTarget6.Src, basicInstruction_preTarget6.Operand, registers));
 
                 #region High Multiply
 
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 6);
-                multInstruction_1 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 7);
 
                 uint mulhResult;
-                var mulA = LoadRegister(idx, registers, highMulInstruction.Dst);
-                var mulB = LoadRegister(idx, registers, highMulInstruction.Src);
                 ulong mulHi;
 
-                mulHi = highMulInstruction.Type == (int)OpCode.UMulH ? Mul64hi(mulA, mulB) : (ulong)Mul64hi((long)mulA, (long)mulB);
+                var mulA = LoadRegister(idx, registers, highMulInstruction_preTarget1.Dst);
+                var mulB = LoadRegister(idx, registers, highMulInstruction_preTarget1.Src);
 
-                Store(idx, registers, highMulInstruction.Dst, mulHi);
+                mulHi = highMulInstruction_preTarget1.Type == (int)OpCode.UMulH ? Mul64hi(mulA, mulB) : (ulong)Mul64hi((long)mulA, (long)mulB);
+
+                Store(idx, registers, highMulInstruction_preTarget1.Dst, mulHi);
                 mulhResult = (uint)mulHi;
                 #endregion
 
                 //Basic opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget7.Dst, BasicOperation(idx, basicInstruction_preTarget7.Type, basicInstruction_preTarget7.Dst, basicInstruction_preTarget7.Src, basicInstruction_preTarget7.Operand, registers));
 
-                basicInstruction_2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 7);
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 8);
-                var multInstruction_3 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
 
                 //Multiply
-                Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
+                Store(idx, registers, multInstruction_preTarget4.Dst, LoadRegister(idx, registers, multInstruction_preTarget4.Src) * LoadRegister(idx, registers, multInstruction_preTarget4.Dst));
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget8.Dst, BasicOperation(idx, basicInstruction_preTarget8.Type, basicInstruction_preTarget8.Dst, basicInstruction_preTarget8.Src, basicInstruction_preTarget8.Operand, registers));
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_preTarget9.Dst, BasicOperation(idx, basicInstruction_preTarget9.Type, basicInstruction_preTarget9.Dst, basicInstruction_preTarget9.Src, basicInstruction_preTarget9.Operand, registers));
 
                 //Multiply
-                int branchOp = LoadBranchInstruction(ref startInstruction, MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9).Mask;
-                Store(idx, registers, multInstruction_3.Dst, LoadRegister(idx, registers, multInstruction_3.Src) * LoadRegister(idx, registers, multInstruction_3.Dst));
+                Store(idx, registers, multInstruction_preTarget5.Dst, LoadRegister(idx, registers, multInstruction_preTarget5.Src) * LoadRegister(idx, registers, multInstruction_preTarget5.Dst));
 
                 //Branch
-
-                if (allowBranch && (branchOp & mulhResult) == 0)
+                if (allowBranch && ((uint)branchInstruction.Mask & mulhResult) == 0)
                 {
                     allowBranch = false;
 
                     goto target;
                 }
 
+                //Warp.Barrier();
+
                 //Multiply
-                multInstruction_1 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
-                basicInstruction_2 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 10);
-                highMulInstruction = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 11);
+                var multInstruction_aftTarget1 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
+                var basicInstruction_aftTarget1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
+                var basicInstruction_aftTarget2 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 10);
 
-                Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
-
-                //Basic Opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, multInstruction_aftTarget1.Dst, LoadRegister(idx, registers, multInstruction_aftTarget1.Src) * LoadRegister(idx, registers, multInstruction_aftTarget1.Dst));
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget1.Dst, BasicOperation(idx, basicInstruction_aftTarget1.Type, basicInstruction_aftTarget1.Dst, basicInstruction_aftTarget1.Src, basicInstruction_aftTarget1.Operand, registers));
+                
+                var highMulInstruction = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 11);
+                var basicInstruction_aftTarget3 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 11);
+                var multInstruction_aftTarget2 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 12);
+
+                //Basic Opt
+                Store(idx, registers, basicInstruction_aftTarget2.Dst, BasicOperation(idx, basicInstruction_aftTarget2.Type, basicInstruction_aftTarget2.Dst, basicInstruction_aftTarget2.Src, basicInstruction_aftTarget2.Operand, registers));
 
                 #region High Multiply
-
 
                 mulA = LoadRegister(idx, registers, highMulInstruction.Dst);
                 mulB = LoadRegister(idx, registers, highMulInstruction.Src);
@@ -229,47 +233,54 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                 #endregion
 
+
+                var basicInstruction_aftTarget4 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 12);
+                var basicInstruction_aftTarget5 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 13);
+
+
                 //Basic opt
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 11);
-                multInstruction_1 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 12);
-                basicInstruction_2 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 12);
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget3.Dst, BasicOperation(idx, basicInstruction_aftTarget3.Type, basicInstruction_aftTarget3.Dst, basicInstruction_aftTarget3.Src, basicInstruction_aftTarget3.Operand, registers));
 
                 //Multiply
-                Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
+                Store(idx, registers, multInstruction_aftTarget2.Dst, LoadRegister(idx, registers, multInstruction_aftTarget2.Src) * LoadRegister(idx, registers, multInstruction_aftTarget2.Dst));
+
+
+                var multInstruction_aftTarget3 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 14);
+                var basicInstruction_aftTarget6 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 14);
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget4.Dst, BasicOperation(idx, basicInstruction_aftTarget4.Type, basicInstruction_aftTarget4.Dst, basicInstruction_aftTarget4.Src, basicInstruction_aftTarget4.Operand, registers));
+
 
                 //Basic Opt
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 13);
-                multInstruction_1 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 14);
-                basicInstruction_2 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 14);
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget5.Dst, BasicOperation(idx, basicInstruction_aftTarget5.Type, basicInstruction_aftTarget5.Dst, basicInstruction_aftTarget5.Src, basicInstruction_aftTarget5.Operand, registers));
+
+
+                var basicInstruction_aftTarget7 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 15);
+                var multInstruction_aftTarget4 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 16);
 
                 //Multiply
-                Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
+                Store(idx, registers, multInstruction_aftTarget3.Dst, LoadRegister(idx, registers, multInstruction_aftTarget3.Src) * LoadRegister(idx, registers, multInstruction_aftTarget3.Dst));
 
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 15);
-                multInstruction_1 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 16);
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget6.Dst, BasicOperation(idx, basicInstruction_aftTarget6.Type, basicInstruction_aftTarget6.Dst, basicInstruction_aftTarget6.Src, basicInstruction_aftTarget6.Operand, registers));
+
+                var basicInstruction_aftTarget8 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 10 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 16);
+                var basicInstruction_aftTarget9 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 10 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 17);
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget7.Dst, BasicOperation(idx, basicInstruction_aftTarget7.Type, basicInstruction_aftTarget7.Dst, basicInstruction_aftTarget7.Src, basicInstruction_aftTarget7.Operand, registers));
 
-                basicInstruction_2 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 10 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 16);
-                basicInstruction_1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 10 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 17);
 
                 //Multiply
-                Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
+                Store(idx, registers, multInstruction_aftTarget4.Dst, LoadRegister(idx, registers, multInstruction_aftTarget4.Src) * LoadRegister(idx, registers, multInstruction_aftTarget4.Dst));
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_2.Dst, BasicOperation(idx, basicInstruction_2.Type, basicInstruction_2.Dst, basicInstruction_2.Src, basicInstruction_2.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget8.Dst, BasicOperation(idx, basicInstruction_aftTarget8.Type, basicInstruction_aftTarget8.Dst, basicInstruction_aftTarget8.Src, basicInstruction_aftTarget8.Operand, registers));
 
                 //Basic Opt
-                Store(idx, registers, basicInstruction_1.Dst, BasicOperation(idx, basicInstruction_1.Type, basicInstruction_1.Dst, basicInstruction_1.Src, basicInstruction_1.Operand, registers));
+                Store(idx, registers, basicInstruction_aftTarget9.Dst, BasicOperation(idx, basicInstruction_aftTarget9.Type, basicInstruction_aftTarget9.Dst, basicInstruction_aftTarget9.Src, basicInstruction_aftTarget9.Operand, registers));
             }
 
             return Digest(idx, registers, key);
@@ -329,6 +340,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             command.Dispose();
 
             _offsetCounter += 16;
+            _offsetCounter %= (32 * 16);
         }
 
 
