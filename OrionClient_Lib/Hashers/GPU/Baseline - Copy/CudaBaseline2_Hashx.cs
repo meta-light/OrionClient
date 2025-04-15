@@ -305,15 +305,13 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 return Mad(dst, src, (ulong)operand);
             }
 
-            switch (type)
+
+            if(type == (int)OpCode.XorConst)
             {
-                case (int)OpCode.AddConst:
-                    return dst + (ulong)operand;
-                default:
-                    {
-                        return dst ^ (ulong)operand;
-                    }
+                return dst ^ (ulong)operand;
             }
+
+            return dst + (ulong)operand;
         }
 
         #endregion
