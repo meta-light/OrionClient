@@ -293,23 +293,25 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         {
             ulong dst = LoadRegister(idx, registers, dstId);
 
+            if (type <= (int)OpCode.Rotate)
+            {
+                ulong src = LoadRegister(idx, registers, srcId);
+
+                if (type != (int)OpCode.AddShift)
+                {
+                    return (dst << (64 - operand)) ^ (src >> operand);
+                }
+
+                return Mad(dst, src, (ulong)operand);
+            }
+
             switch (type)
             {
-                case (int)OpCode.AddShift:
-                    {
-                        ulong src = LoadRegister(idx, registers, srcId);
-                        return Mad(dst, src, (ulong)operand);
-                    }
                 case (int)OpCode.AddConst:
                     return dst + (ulong)operand;
-                case (int)OpCode.XorConst:
-                    {
-                        return dst ^ (ulong)operand;
-                    }
                 default:
                     {
-                        ulong src = LoadRegister(idx, registers, srcId);
-                        return (dst << (64 - operand)) ^ (src >> operand);
+                        return dst ^ (ulong)operand;
                     }
             }
         }
