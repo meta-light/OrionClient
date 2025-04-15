@@ -45,7 +45,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         public override KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings)
         {
             int iterationCount = maxNonces * (ushort.MaxValue + 1);
-            int groupSize = 128;
+            int groupSize = CudaBaseline2GPUHasher.HashxBlockSize;
 
             var g = Math.Log2(groupSize);
 
@@ -54,8 +54,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             {
                 groupSize = 128;
             }
-
-            groupSize = Math.Min(groupSize, 128);
 
             return new KernelConfig(
                 new Index3D((iterationCount + groupSize - 1) / groupSize, 1, 1),

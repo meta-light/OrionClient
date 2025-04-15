@@ -19,7 +19,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
     public partial class CudaBaseline2GPUHasher
     {
         private static int _offsetCounter = 0;
-        private const int _blockSize = 128;
+        public const int HashxBlockSize = 128;
 
         private static void Hashx(ArrayView<Instruction> program, ArrayView<SipState> key, ArrayView<ulong> results)
         {
@@ -29,7 +29,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             int index = (grid.X * group.Y + grid.Y);// % (ushort.MaxValue + 1);
 
             //var sMemory = SharedMemory.Allocate<Instruction>(512);
-            var registers = SharedMemory.Allocate<ulong>(8 * _blockSize);
+            var registers = SharedMemory.Allocate<ulong>(8 * HashxBlockSize);
             var idx = Group.IdxX;
 
             //Interop.WriteLine("{0}", idx);
@@ -73,20 +73,20 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             {
                 SipState x = new SipState
                 {
-                    V0 = registers[0 * _blockSize + idx] + key.V0,
-                    V1 = registers[1 * _blockSize + idx] + key.V1,
-                    V2 = registers[2 * _blockSize + idx],
-                    V3 = registers[3 * _blockSize + idx]
+                    V0 = registers[0 * HashxBlockSize + idx] + key.V0,
+                    V1 = registers[1 * HashxBlockSize + idx] + key.V1,
+                    V2 = registers[2 * HashxBlockSize + idx],
+                    V3 = registers[3 * HashxBlockSize + idx]
                 };
 
                 x.SipRound();
 
                 SipState y = new SipState
                 {
-                    V0 = registers[4 * _blockSize + idx],
-                    V1 = registers[5 * _blockSize + idx],
-                    V2 = registers[6 * _blockSize + idx] + key.V2,
-                    V3 = registers[7 * _blockSize + idx] + key.V3
+                    V0 = registers[4 * HashxBlockSize + idx],
+                    V1 = registers[5 * HashxBlockSize + idx],
+                    V2 = registers[6 * HashxBlockSize + idx] + key.V2,
+                    V3 = registers[7 * HashxBlockSize + idx] + key.V3
                 };
 
                 y.SipRound();
@@ -520,10 +520,10 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             s.SipRound();
             s.SipRound();
 
-            ret[0 * _blockSize + idx] = s.V0;
-            ret[1 * _blockSize + idx] = s.V1;
-            ret[2 * _blockSize + idx] = s.V2;
-            ret[3 * _blockSize + idx] = s.V3;
+            ret[0 * HashxBlockSize + idx] = s.V0;
+            ret[1 * HashxBlockSize + idx] = s.V1;
+            ret[2 * HashxBlockSize + idx] = s.V2;
+            ret[3 * HashxBlockSize + idx] = s.V3;
 
             s.V1 ^= 0xdd;
 
@@ -532,10 +532,10 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             s.SipRound();
             s.SipRound();
 
-            ret[4 * _blockSize + idx] = s.V0;
-            ret[5 * _blockSize + idx] = s.V1;
-            ret[6 * _blockSize + idx] = s.V2;
-            ret[7 * _blockSize + idx] = s.V3;
+            ret[4 * HashxBlockSize + idx] = s.V0;
+            ret[5 * HashxBlockSize + idx] = s.V1;
+            ret[6 * HashxBlockSize + idx] = s.V2;
+            ret[7 * HashxBlockSize + idx] = s.V3;
 
             return ret;
         }
@@ -547,7 +547,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong LoadRegister(int idx, ArrayView<ulong> registers, int id)
         {
-            return registers[id * _blockSize + idx];
+            return registers[id * HashxBlockSize + idx];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -559,7 +559,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 return;
             }
 
-            ret = registers[id * _blockSize + idx];
+            ret = registers[id * HashxBlockSize + idx];
         }
 
         #endregion
@@ -568,12 +568,12 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
         private static unsafe void Store(int idx, ArrayView<ulong> registers, int id, long value)
         {
-            registers[id * _blockSize + idx] = (ulong)value;
+            registers[id * HashxBlockSize + idx] = (ulong)value;
         }
 
         private static unsafe void Store(int idx, ArrayView<ulong> registers, int id, ulong value)
         {
-            registers[id * _blockSize + idx] = value;
+            registers[id * HashxBlockSize + idx] = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
