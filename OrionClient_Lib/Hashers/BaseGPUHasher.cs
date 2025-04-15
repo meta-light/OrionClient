@@ -304,29 +304,33 @@ namespace OrionClientLib.Hashers
                                 instruction.SetDestination((ulong)instruction.Dst);
                                 if (instruction.Type == OpCode.XorConst)
                                 {
-                                    instruction.SetType(OpCode.Xor);
-                                    instruction.Src = (int)instruction.Operand;
+                                    //instruction.SetType(OpCode.Xor);
+                                    //instruction.Src = (int)instruction.Operand;
 
-                                    if (instruction.Src < 8 && instruction.Src >= 0)
-                                    {
-                                        valid = false;
-                                        break;
-                                    }
+                                    //if (instruction.Src < 8 && instruction.Src >= 0)
+                                    //{
+                                    //    valid = false;
+                                    //    break;
+                                    //}
                                 }
                                 else if (instruction.Type == OpCode.AddConst)
                                 {
-                                    instruction.SetType(OpCode.Sub);
-                                    instruction.Src = ((int)instruction.Operand * -1);
+                                    //instruction.SetType(OpCode.Sub);
+                                    //instruction.Src = ((int)instruction.Operand * -1);
 
-                                    if (instruction.Src < 8 && instruction.Src >= 0)
-                                    {
-                                        valid = false;
-                                        break;
-                                    }
+                                    //if (instruction.Src < 8 && instruction.Src >= 0)
+                                    //{
+                                    //    valid = false;
+                                    //    break;
+                                    //}
                                 }
                                 else if (instruction.Type == OpCode.Branch)
                                 {
                                     instruction.Dst = instruction.Operand;
+                                }
+                                else if (instruction.Type == OpCode.Rotate)
+                                {
+                                    instruction.Src = instruction.Dst;
                                 }
 
                                 if (instruction.Type == OpCode.Sub)
