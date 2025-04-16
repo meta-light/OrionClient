@@ -289,22 +289,19 @@ namespace OrionClientLib.Hashers.GPU.AMDBaseline
         {
             ulong dst = BasicLoadRegister(registers.V0, registers.V1, registers.V2, registers.V3, registers.V4, registers.V5, registers.V6, registers.V7, dstId);
 
-            if (type != (int)OpCode.Rotate)
+            if (type <= (int)OpCode.Rotate)
             {
-                ulong src = 0;
+                ulong src = BasicLoadRegister(registers.V0, registers.V1, registers.V2, registers.V3, registers.V4, registers.V5, registers.V6, registers.V7, srcId);
 
-                LoadDualRegister(ref registers, srcId, ref src);
-
-                if (type == (int)OpCode.AddShift)
+                if (type != (int)OpCode.AddShift)
                 {
-                    return Mad(dst, src, (ulong)operand);
+                    return (dst << (64 - operand)) ^ (src >> operand);
                 }
 
-                return dst ^ src;
+                return Mad(dst, src, (ulong)operand);
             }
 
-            var a = dst;
-            return a.Ror(operand);
+            return type == (int)OpCode.XorConst ? dst ^ (ulong)operand : dst + (ulong)operand;
         }
 
         #endregion
