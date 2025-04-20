@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace DrillX.Compiler
 {
-    public enum OpCode : int { None = 0xFF, AddShift = 0, Xor, Rotate, Mul, UMulH, SMulH, AddConst, Sub, XorConst, Branch, Target };
+    public enum OpCode : int { None = 0xFF, AddShift = 0, Xor, Rotate, AddConst, XorConst, Mul, UMulH, SMulH, Sub, Branch, Target };
     public enum RegisterWriterOp : byte { None, Mul, UMulH, SMulH, AddSub, AddConst, Xor, XorConst, Rotate };
 
     public struct RegisterWriter
