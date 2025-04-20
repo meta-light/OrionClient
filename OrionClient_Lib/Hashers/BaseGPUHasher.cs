@@ -36,7 +36,7 @@ namespace OrionClientLib.Hashers
     {
         protected static readonly Logger _logger = LogManager.GetLogger("Main");
 
-        private const int _maxNonces = 2048;
+        private const int _maxNonces = 4096;
         private const int _maxQueueSize = 2;
 
         public IHasher.Hardware HardwareType => IHasher.Hardware.GPU;
@@ -561,7 +561,7 @@ namespace OrionClientLib.Hashers
 
             public const ulong ProgramSize = (Instruction.TotalInstructions * Instruction.ByteSize);
             public const ulong KeySize = SipState.Size;
-            public const ulong HeapSize = 3670016;
+            public const ulong HeapSize = 2239488; //2097152 is required by new equihash
             public const ulong SolutionSize = EquixSolution.Size * EquixSolution.MaxLength;
             public const ulong HashSolutionSize = (ushort.MaxValue + 1) * sizeof(ulong);
             public const ulong MemoryPerNonce = (ProgramSize + KeySize + SolutionSize + HashSolutionSize) * _maxQueueSize + HeapSize;
