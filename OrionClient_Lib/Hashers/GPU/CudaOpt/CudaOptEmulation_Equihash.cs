@@ -24,18 +24,15 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         public const int BlockSize = 512;
         public const int TotalValues = ushort.MaxValue + 1;
 
+
         public const long HeapSize = TotalValues * sizeof(ulong) * (4 + 3);
         const int numBuckets = 256;
         const int sharedBucketItems = 16; //8 are for a buffer
+        const int extendedBucketItems = 18;
         const int totalSharedBucketItems = numBuckets * sharedBucketItems;
+        const int totalInnerSharedBucketItems = totalSharedBucketItems;
         const int passes = 32;
-        const int halveMaxBucketItems = 2; //Halves the max bucket items
-
-        /// <summary>
-        /// 512 or 256
-        /// </summary>
         const int maxBucketItems = 512; //512 or 256
-        const int maxTotalBucketItems = maxBucketItems * numBuckets;
 
         const ulong mask60bit = (1ul << 60) - 1;
 
@@ -58,6 +55,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
             //Group.Barrier();
 
+            #region Global Memory
+
             var heap = globalHeap.Cast<byte>().SubView(HeapSize * block, HeapSize);
 
 
@@ -79,17 +78,21 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             //256KB
             var tempIndices = heap.SubView(TotalValues * 4 * sizeof(ulong) + TotalValues * sizeof(uint) * 2, TotalValues * sizeof(ushort) * 2).Cast<ushort>();
 
+            #endregion
+
             #region Shared Memory
 
             //1KB
             var sharedCounts = SharedMemory.Allocate<int>(numBuckets);  // Count for each time
 
             //1KB
-            var fullCount = SharedMemory.Allocate<int>(numBuckets); //Full counts
+            var fullCount = SharedMemory.Allocate<int>(numBuckets + 1); //Full counts
 
-            //32KB
-            var sharedValues = SharedMemory.Allocate<ulong>(totalSharedBucketItems);  // Shared memory for each block
-            var sharedIndices = SharedMemory.Allocate<ushort>(totalSharedBucketItems);  // Shared memory for each block
+            //Allows for more values on tile sorting to inccrease solution rate
+            var fullShared = SharedMemory.Allocate<byte>(totalSharedBucketItems * sizeof(ulong) + totalSharedBucketItems * sizeof(ushort));
+
+            var sharedValues = fullShared.SubView(0, totalSharedBucketItems * sizeof(ulong)).Cast<ulong>();// Shared memory for each block
+            var sharedIndices = fullShared.SubView(totalSharedBucketItems * sizeof(ulong), totalSharedBucketItems * sizeof(ushort)).Cast<ushort>();// Shared memory for each block
 
             #endregion
 
@@ -118,15 +121,17 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static int SortPass1(int idx, ArrayView<ulong> values, ArrayView<int> sharedCounts, ArrayView<int> fullCount,
-                    ArrayView<ulong> sharedValues, ArrayView<ushort> sharedIndices, ArrayView<ulong> tempStage, ArrayView<ushort> tempIndices, ArrayView<ulong> stageBValues, ArrayView<uint> stage1Indices,
-                    int totalItems)
+    ArrayView<ulong> sharedValues, ArrayView<ushort> sharedIndices, ArrayView<ulong> tempStage, ArrayView<ushort> tempIndices, ArrayView<ulong> stageBValues, ArrayView<uint> stage1Indices,
+    int totalItems)
         {
             if (idx < numBuckets)
             {
                 fullCount[idx] = 0;
             }
+
+            #region Low 8 bits
 
             for (int x = 0; x < passes; x++)
             {
@@ -149,14 +154,14 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                     var bucket = (int)value & 0xFF;
 
                     var loc = Atomic.Add(ref sharedCounts[bucket], 1);
-                    loc = Math.Min(sharedBucketItems - 1, loc);
+                    loc = Math.Min(extendedBucketItems - 1, loc);
 
                     //TileLocation = 11 bits
                     //Index = TileLocation * pass
                     ulong v = value >> 8;
                     ulong tileLocation = (ulong)i << 52;
 
-                    sharedValues[loc + bucket * sharedBucketItems] = v | tileLocation;
+                    sharedValues[loc + bucket * extendedBucketItems] = v | tileLocation;
                 }
 
                 Group.Barrier();
@@ -164,11 +169,11 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Verification of indexes
                 //if (idx < 256)
                 //{
-                //    var totalBucketItems = sharedCounts[idx];
+                //    var totalBucketItems = Math.Min(tempSharedBucketItems, sharedCounts[idx]);
 
                 //    for (int i = 0; i < totalBucketItems; i++)
                 //    {
-                //        var v = sharedValues[i + idx * sharedBucketItems];
+                //        var v = sharedValues[i + idx * tempSharedBucketItems];
 
                 //        var tLocation = (int)((v) >> 52);
                 //        var index = tLocation + (x * tileItems);
@@ -191,22 +196,24 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Group.Barrier();
 
                 //Transfer over chunks
-                for (int i = idx; i < totalSharedBucketItems; i += BlockSize)
+                for (int i = idx; i < totalSharedBucketItems + (extendedBucketItems - sharedBucketItems) * numBuckets; i += BlockSize)
                 {
-                    int bucket = i / sharedBucketItems;
-                    int itemIndex = i & (sharedBucketItems - 1);
+                    int bucket = i / extendedBucketItems;
+                    int itemIndex = i % extendedBucketItems;
 
-                    int maxItems = Math.Min(sharedBucketItems, sharedCounts[bucket]);
+
+                    int actualItems = sharedCounts[bucket];
+                    int maxItems = Math.Min(extendedBucketItems, actualItems);
                     ulong value = sharedValues[i];
 
                     //First thread in bucket
                     if (itemIndex == 0)
                     {
                         Atomic.Add(ref fullCount[bucket], maxItems);
+                        //Atomic.Add(ref fullCount[256], actualItems);
                     }
 
-                    //Buckets are shared between 16 threads in a single warp, so this will work
-                    Warp.Barrier();
+                    Group.Barrier();
 
                     int startIndex = fullCount[bucket] - maxItems;
 
@@ -227,9 +234,13 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 }
             }
 
+            #endregion
+
             Group.Barrier();
 
-            const int smallBucketItems = totalSharedBucketItems / 2;
+            #region High 7 bits
+
+            const int smallBucketItems = totalInnerSharedBucketItems / 2;
             const int smallBuckets = numBuckets / 2;
 
             //Will be 128 buckets (7 bits) with 16 values each
@@ -336,6 +347,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 Group.Barrier();
             }
 
+            #endregion
+
             Group.Barrier();
 
             int totalValues = Math.Min(TotalValues, globalMemoryIndex[0]);
@@ -383,6 +396,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 fullCount[idx] = 0;
             }
 
+            #region Low 8 bits
+
             for (int x = 0; x < passes; x++)
             {
                 //Clear counts
@@ -404,26 +419,26 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                     var bucket = (int)value & 0xFF;
 
                     var loc = Atomic.Add(ref sharedCounts[bucket], 1);
-                    loc = Math.Min(sharedBucketItems - 1, loc);
+                    loc = Math.Min(extendedBucketItems - 1, loc);
 
                     //TileLocation = 11 bits
                     //Index = TileLocation * pass
                     ulong v = value >> 8;
                     ulong tileLocation = (ulong)i << 52;
 
-                    sharedValues[loc + bucket * sharedBucketItems] = v | tileLocation;
+                    sharedValues[loc + bucket * extendedBucketItems] = v | tileLocation;
                 }
 
                 Group.Barrier();
 
                 //Verification of indexes
-                //if (idx == 0)
+                //if (idx < 256)
                 //{
-                //    var totalBucketItems = sharedCounts[idx];
+                //    var totalBucketItems = Math.Min(tempSharedBucketItems, sharedCounts[idx]);
 
                 //    for (int i = 0; i < totalBucketItems; i++)
                 //    {
-                //        var v = sharedValues[i + idx * sharedBucketItems];
+                //        var v = sharedValues[i + idx * tempSharedBucketItems];
 
                 //        var tLocation = (int)((v) >> 52);
                 //        var index = tLocation + (x * tileItems);
@@ -446,22 +461,24 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Group.Barrier();
 
                 //Transfer over chunks
-                for (int i = idx; i < totalSharedBucketItems; i += BlockSize)
+                for (int i = idx; i < totalSharedBucketItems + (extendedBucketItems - sharedBucketItems) * numBuckets; i += BlockSize)
                 {
-                    int bucket = i / sharedBucketItems;
-                    int itemIndex = i & (sharedBucketItems - 1);
+                    int bucket = i / extendedBucketItems;
+                    int itemIndex = i % extendedBucketItems;
 
-                    int maxItems = Math.Min(sharedBucketItems, sharedCounts[bucket]);
+
+                    int actualItems = sharedCounts[bucket];
+                    int maxItems = Math.Min(extendedBucketItems, actualItems);
                     ulong value = sharedValues[i];
 
                     //First thread in bucket
                     if (itemIndex == 0)
                     {
                         Atomic.Add(ref fullCount[bucket], maxItems);
+                        //Atomic.Add(ref fullCount[256], actualItems);
                     }
 
-                    //Buckets are shared between 16 threads in a single warp, so this will work
-                    Warp.Barrier();
+                    Group.Barrier();
 
                     int startIndex = fullCount[bucket] - maxItems;
 
@@ -482,9 +499,13 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 }
             }
 
+            #endregion
+
             Group.Barrier();
 
-            const int smallBucketItems = totalSharedBucketItems / 2;
+            #region High 7 bits
+
+            const int smallBucketItems = totalInnerSharedBucketItems / 2;
             const int smallBuckets = numBuckets / 2;
 
             //Will be 128 buckets (7 bits) with 16 values each
@@ -531,11 +552,13 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                 Group.Barrier();
 
+
                 //Buckets have no issues
 
 
                 //8 loops
                 //16 items per bucket
+
                 for (int z = idx; z < smallBucketItems; z += BlockSize)
                 {
                     int innerBucketA = z / sharedBucketItems;
@@ -616,25 +639,28 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 Group.Barrier();
             }
 
+            #endregion
+
             Group.Barrier();
 
-            int totalValues = globalMemoryIndex[0];
+            int totalValues = Math.Min(TotalValues, globalMemoryIndex[0]);
 
             //for (int i = idx; i < totalValues; i += BlockSize)
             //{
             //    var v = stageBValues[i];
             //    var index = stage1Indices[i];
 
-            //    var valueA = values[(int)index & 0xFFFF] & mask60bit;
+            //    var valueA = values[(int)(index & 0xFFFF)] & mask60bit;
             //    var valueB = values[(int)(index >> 16)] & mask60bit;
 
             //    var combined = valueA + valueB;
 
-            //    if (v != combined)
+            //    if (v != (combined >> 15))
             //    {
-            //        Interop.WriteLine("{0} != {1}", v, combined);
+            //        Interop.WriteLine("[{2}] {0} != {1}. Indices: {3} {4}", v, combined, i, index & 0xFFFF, index >> 16);
             //    }
-            //    if ((stageBValues[i] & 0x7FFF) != 0 || v == 0)
+
+            //    if ((combined & 0x7FFF) != 0 || v == 0)
             //    {
             //        Interop.WriteLine("[{0}] Bad", i);
             //    }
