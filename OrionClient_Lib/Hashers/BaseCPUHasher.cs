@@ -410,7 +410,7 @@ namespace OrionClientLib.Hashers
 
         protected virtual bool ShouldContinueExecution()
         {
-            return _running && !ResettingChallenge;
+            return _running && !ResettingChallenge && !IsMiningPaused;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
