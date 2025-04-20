@@ -14,11 +14,11 @@ using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.GPU.Baseline
 {
-    public partial class CudaBaseline2GPUHasher : BaseGPUHasher
+    public partial class CudaOptEmulationGPUHasher : BaseGPUHasher
     {
-        public override string Name => "Cuda Baseline 2";
-        public override string Description => "Baseline GPU hashing for Nvidia GPUs";
-        public override bool DisplaySetting => false;
+        public override string Name => "Cuda (Emulation)";
+        public override string Description => "Cuda optimized hasher using an emulation kernel for hashx";
+        public override bool DisplaySetting => true;
 
         public override Action<ArrayView<Instruction>, ArrayView<SipState>, ArrayView<ulong>> HashxKernel()
         {
@@ -45,7 +45,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         public override KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings)
         {
             int iterationCount = maxNonces * (ushort.MaxValue + 1);
-            int groupSize = CudaBaseline2GPUHasher.HashxBlockSize;
+            int groupSize = CudaOptEmulationGPUHasher.HashxBlockSize;
 
             var g = Math.Log2(groupSize);
 
@@ -63,8 +63,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
         public override KernelConfig GetEquihashKernelConfig(Device device, int maxNonces, Settings settings)
         {
-            int iterationCount = 128 * maxNonces;
-            int groupSize = 128;
+            int groupSize = 512;
+            int iterationCount = groupSize * maxNonces;
 
             return new KernelConfig(
                 new Index3D((iterationCount + groupSize - 1) / groupSize, 1, 1),
@@ -74,7 +74,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
         public override (CudaCacheConfiguration, CudaCacheConfiguration) CudaCacheOption()
         {
-            return (CudaCacheConfiguration.PreferShared, CudaCacheConfiguration.PreferL1);
+            return (CudaCacheConfiguration.PreferShared, CudaCacheConfiguration.PreferShared);
         }
     }
 }

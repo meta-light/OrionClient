@@ -79,7 +79,7 @@ namespace OrionClientLib.Hashers
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Interlocked))] //Needed for GPU
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CudaBaselineGPUHasher))] //Need to add for each GPU to run on linux
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CudaBaseline2GPUHasher))] //Need to add for each GPU to run on linux
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CudaOptEmulationGPUHasher))] //Need to add for each GPU to run on linux
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Cuda4090OptGPUHasher))] //Need to add for each GPU to run on linux
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(OpenCLBaselineGPUHasher))] //Need to add for each GPU to run on linux
         public async Task<(bool success, string message)> InitializeAsync(IPool pool, Settings settings)
@@ -561,7 +561,7 @@ namespace OrionClientLib.Hashers
 
             public const ulong ProgramSize = (Instruction.TotalInstructions * Instruction.ByteSize);
             public const ulong KeySize = SipState.Size;
-            public const ulong HeapSize = 2239488;
+            public const ulong HeapSize = 3670016;
             public const ulong SolutionSize = EquixSolution.Size * EquixSolution.MaxLength;
             public const ulong HashSolutionSize = (ushort.MaxValue + 1) * sizeof(ulong);
             public const ulong MemoryPerNonce = (ProgramSize + KeySize + SolutionSize + HashSolutionSize) * _maxQueueSize + HeapSize;

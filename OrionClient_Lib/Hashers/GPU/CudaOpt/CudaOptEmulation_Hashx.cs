@@ -16,7 +16,7 @@ using ILGPU.Runtime.Cuda;
 
 namespace OrionClientLib.Hashers.GPU.Baseline
 {
-    public partial class CudaBaseline2GPUHasher
+    public partial class CudaOptEmulationGPUHasher
     {
         private static int _offsetCounter = 0;
         public const int HashxBlockSize = 128;
