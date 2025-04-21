@@ -14,22 +14,37 @@ using System.Text;
 using System.Threading.Tasks;
 using ILGPU.Runtime.Cuda;
 
-namespace OrionClientLib.Hashers.GPU.Baseline
+namespace OrionClientLib.Hashers.GPU.AMDBaseline
 {
-    public partial class CudaOptEmulationGPUHasher
+    public partial class OpenCLOptEmulationGPUHasher
     {
         private static int _offsetCounter = 0;
         public const int HashxBlockSize = 128;
+        private const int _blockSize = HashxBlockSize;
 
-        private static void Hashx(ArrayView<Instruction> program, ArrayView<SipState> key, ArrayView<ulong> results)
+        public static void Hashx(ArrayView<Instruction> program, ArrayView<SipState> key, ArrayView<ulong> results)
         {
             var grid = Grid.GlobalIndex;
             var group = Group.Dimension;
 
-            int index = (grid.X * group.Y + grid.Y);
+            int index = (grid.X * group.Y + grid.Y);// % (ushort.MaxValue + 1);
 
-            var registers = SharedMemory.Allocate<ulong>(8 * HashxBlockSize);
+            //var sMemory = SharedMemory.Allocate<Instruction>(512);
+            var registers = SharedMemory.Allocate<ulong>(8 * _blockSize);
             var idx = Group.IdxX;
+
+            //Interop.WriteLine("{0}", idx);
+
+            //var bInstruction = program.SubView(index / (ushort.MaxValue + 1) * 512).Cast<ulong>();
+            //var uMemory = sMemory.Cast<ulong>();
+
+            //for (int i = idx; i < 1024; i += Group.DimX)
+            //{
+            //    uMemory[i] = bInstruction[i];
+            //}
+
+            //Group.Barrier();
+
             var sharedProgram = SharedMemory.Allocate<int>(Instruction.ProgramSize).Cast<ulong>();
             var p = program.Cast<int>().SubView(index / (ushort.MaxValue + 1) * Instruction.ProgramSize, Instruction.ProgramSize).Cast<ulong>();
 
@@ -40,13 +55,17 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
             Group.Barrier();
 
+
             results[index] = Emulate(sharedProgram.Cast<int>(), key.SubView(index / (ushort.MaxValue + 1)), (ulong)(index % (ushort.MaxValue + 1)), registers, idx);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong Emulate(ArrayView<int> program, ArrayView<SipState> key, ulong input, ArrayView<ulong> sRegs, int idx)
         {
+            //return InterpretFull(ref program[0], ref key[0], input);
+
             return Interpret(program, key[0], input, sRegs, idx);
+            //return InterpetCompiled(key.V0, key.V1, key.V2, key.V3, input); 
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,20 +75,20 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             {
                 SipState x = new SipState
                 {
-                    V0 = registers[0 * HashxBlockSize + idx] + key.V0,
-                    V1 = registers[1 * HashxBlockSize + idx] + key.V1,
-                    V2 = registers[2 * HashxBlockSize + idx],
-                    V3 = registers[3 * HashxBlockSize + idx]
+                    V0 = registers[0 * _blockSize + idx] + key.V0,
+                    V1 = registers[1 * _blockSize + idx] + key.V1,
+                    V2 = registers[2 * _blockSize + idx],
+                    V3 = registers[3 * _blockSize + idx]
                 };
 
                 x.SipRound();
 
                 SipState y = new SipState
                 {
-                    V0 = registers[4 * HashxBlockSize + idx],
-                    V1 = registers[5 * HashxBlockSize + idx],
-                    V2 = registers[6 * HashxBlockSize + idx] + key.V2,
-                    V3 = registers[7 * HashxBlockSize + idx] + key.V3
+                    V0 = registers[4 * _blockSize + idx],
+                    V1 = registers[5 * _blockSize + idx],
+                    V2 = registers[6 * _blockSize + idx] + key.V2,
+                    V3 = registers[7 * _blockSize + idx] + key.V3
                 };
 
                 y.SipRound();
@@ -84,34 +103,36 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             registers = SipHash24Ctr(idx, key, input, registers);
             bool allowBranch = true;
 
-            
             for (int i = 0; i < 16; i++)
             {
                 //ArrayView<int> startInstruction = program.SubView(i * Instruction.Size, Instruction.Size);
                 ref int startInstruction = ref program.SubView(i * Instruction.Size, Instruction.Size)[0];
 
-
                 //Multiply
-                var multInstruction_1 = LoadMultInstruction(ref startInstruction, 0);
+                var multInstruction_1 = LoadMultInstruction(ref startInstruction, 0 * 4);
                 LoadTargetInstruction();
-                var multInstruction_preTarget = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 1 + BasicInstruction.Size * 0);
+                var multInstruction_preTarget = LoadMultInstruction(ref startInstruction, 2 * 4);
 
                 Store(idx, registers, multInstruction_1.Dst, LoadRegister(idx, registers, multInstruction_1.Src) * LoadRegister(idx, registers, multInstruction_1.Dst));
 
                 //Warp.Barrier();
 
                 //Got a lot of extra registers
-                var basicInstruction_preTarget = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 0);
-                var basicInstruction_preTarget2 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 1);
-                var multInstruction_preTarget2 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 2 + BasicInstruction.Size * 2);
-                var basicInstruction_preTarget3 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 2);
-                var basicInstruction_preTarget4 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 3);
-                var multInstruction_preTarget3 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 3 + BasicInstruction.Size * 4);
-                var basicInstruction_preTarget5 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + BasicInstruction.Size * 4);
-                var basicInstruction_preTarget6 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + BasicInstruction.Size * 5);
-                var highMulInstruction_preTarget1 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 0 + BasicInstruction.Size * 6);
-                var basicInstruction_preTarget7 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 6);
-                var multInstruction_preTarget4 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 4 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 7);
+                var basicInstruction_preTarget = LoadBasicInstruction(ref startInstruction, 3 * 4);
+                var basicInstruction_preTarget2 = LoadBasicInstruction(ref startInstruction, 4 * 4);
+                var multInstruction_preTarget2 = LoadMultInstruction(ref startInstruction, 5 * 4);
+                var basicInstruction_preTarget3 = LoadBasicInstruction(ref startInstruction, 6 * 4);
+                var basicInstruction_preTarget4 = LoadBasicInstruction(ref startInstruction, 7 * 4);
+                var multInstruction_preTarget3 = LoadMultInstruction(ref startInstruction, 8 * 4);
+                var basicInstruction_preTarget5 = LoadBasicInstruction(ref startInstruction, 9 * 4);
+                var basicInstruction_preTarget6 = LoadBasicInstruction(ref startInstruction, 10 * 4);
+                var highMulInstruction_preTarget1 = LoadBasicInstruction(ref startInstruction, 11 * 4);
+                var basicInstruction_preTarget7 = LoadBasicInstruction(ref startInstruction, 12 * 4);
+                var multInstruction_preTarget4 = LoadMultInstruction(ref startInstruction, 13 * 4);
+                var basicInstruction_preTarget8 = LoadBasicInstruction(ref startInstruction, 14 * 4);
+                var basicInstruction_preTarget9 = LoadBasicInstruction(ref startInstruction, 15 * 4);
+                var multInstruction_preTarget5 = LoadMultInstruction(ref startInstruction, 16 * 4);
+                var branchInstruction = LoadBranchInstruction(ref startInstruction, 17 * 4);
 
             target:
 
@@ -120,6 +141,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_preTarget.Dst, BasicOperation(idx, basicInstruction_preTarget.Type, basicInstruction_preTarget.Dst, basicInstruction_preTarget.Src, basicInstruction_preTarget.Operand, registers));
+                //Mult instruction 2 here
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_preTarget2.Dst, BasicOperation(idx, basicInstruction_preTarget2.Type, basicInstruction_preTarget2.Dst, basicInstruction_preTarget2.Src, basicInstruction_preTarget2.Operand, registers));
@@ -135,11 +157,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                 //Multiply
                 Store(idx, registers, multInstruction_preTarget3.Dst, LoadRegister(idx, registers, multInstruction_preTarget3.Src) * LoadRegister(idx, registers, multInstruction_preTarget3.Dst));
-
-                var basicInstruction_preTarget8 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 7);
-                var basicInstruction_preTarget9 = LoadBasicInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 8);
-                var multInstruction_preTarget5 = LoadMultInstruction(ref startInstruction, MultIntruction.Size * 5 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
-                var branchInstruction = LoadBranchInstruction(ref startInstruction, MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_preTarget5.Dst, BasicOperation(idx, basicInstruction_preTarget5.Type, basicInstruction_preTarget5.Dst, basicInstruction_preTarget5.Src, basicInstruction_preTarget5.Operand, registers));
@@ -189,18 +206,18 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Warp.Barrier();
 
                 //Multiply
-                var multInstruction_aftTarget1 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 6 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
-                var basicInstruction_aftTarget1 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 9);
-                var basicInstruction_aftTarget2 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 10);
+                var multInstruction_aftTarget1 = LoadMultInstruction(ref startInstruction, 18 * 4);
+                var basicInstruction_aftTarget1 = LoadBasicInstruction(ref startInstruction, 19 * 4);
+                var basicInstruction_aftTarget2 = LoadBasicInstruction(ref startInstruction, 20 * 4);
 
                 Store(idx, registers, multInstruction_aftTarget1.Dst, LoadRegister(idx, registers, multInstruction_aftTarget1.Src) * LoadRegister(idx, registers, multInstruction_aftTarget1.Dst));
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_aftTarget1.Dst, BasicOperation(idx, basicInstruction_aftTarget1.Type, basicInstruction_aftTarget1.Dst, basicInstruction_aftTarget1.Src, basicInstruction_aftTarget1.Operand, registers));
-                
-                var highMulInstruction = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 11);
-                var basicInstruction_aftTarget3 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 11);
-                var multInstruction_aftTarget2 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 12);
+
+                var highMulInstruction = LoadBasicInstruction(ref startInstruction, 21 * 4);
+                var basicInstruction_aftTarget3 = LoadBasicInstruction(ref startInstruction, 22 * 4);
+                var multInstruction_aftTarget2 = LoadMultInstruction(ref startInstruction, 23 * 4);
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_aftTarget2.Dst, BasicOperation(idx, basicInstruction_aftTarget2.Type, basicInstruction_aftTarget2.Dst, basicInstruction_aftTarget2.Src, basicInstruction_aftTarget2.Operand, registers));
@@ -217,8 +234,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 #endregion
 
 
-                var basicInstruction_aftTarget4 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 12);
-                var basicInstruction_aftTarget5 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 13);
+                var basicInstruction_aftTarget4 = LoadBasicInstruction(ref startInstruction, 24 * 4);
+                var basicInstruction_aftTarget5 = LoadBasicInstruction(ref startInstruction, 25 * 4);
 
 
                 //Basic opt
@@ -228,8 +245,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 Store(idx, registers, multInstruction_aftTarget2.Dst, LoadRegister(idx, registers, multInstruction_aftTarget2.Src) * LoadRegister(idx, registers, multInstruction_aftTarget2.Dst));
 
 
-                var multInstruction_aftTarget3 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 8 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 14);
-                var basicInstruction_aftTarget6 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 14);
+                var multInstruction_aftTarget3 = LoadMultInstruction(ref startInstruction, 26 * 4);
+                var basicInstruction_aftTarget6 = LoadBasicInstruction(ref startInstruction, 27 * 4);
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_aftTarget4.Dst, BasicOperation(idx, basicInstruction_aftTarget4.Type, basicInstruction_aftTarget4.Dst, basicInstruction_aftTarget4.Src, basicInstruction_aftTarget4.Operand, registers));
@@ -239,8 +256,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 Store(idx, registers, basicInstruction_aftTarget5.Dst, BasicOperation(idx, basicInstruction_aftTarget5.Type, basicInstruction_aftTarget5.Dst, basicInstruction_aftTarget5.Src, basicInstruction_aftTarget5.Operand, registers));
 
 
-                var basicInstruction_aftTarget7 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 15);
-                var multInstruction_aftTarget4 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 9 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 16);
+                var basicInstruction_aftTarget7 = LoadBasicInstruction(ref startInstruction, 28 * 4);
+                var multInstruction_aftTarget4 = LoadMultInstruction(ref startInstruction, 29 * 4);
 
                 //Multiply
                 Store(idx, registers, multInstruction_aftTarget3.Dst, LoadRegister(idx, registers, multInstruction_aftTarget3.Src) * LoadRegister(idx, registers, multInstruction_aftTarget3.Dst));
@@ -249,8 +266,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 //Basic Opt
                 Store(idx, registers, basicInstruction_aftTarget6.Dst, BasicOperation(idx, basicInstruction_aftTarget6.Type, basicInstruction_aftTarget6.Dst, basicInstruction_aftTarget6.Src, basicInstruction_aftTarget6.Operand, registers));
 
-                var basicInstruction_aftTarget8 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 10 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 16);
-                var basicInstruction_aftTarget9 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 10 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 17);
+                var basicInstruction_aftTarget8 = LoadBasicInstruction(ref startInstruction, 30 * 4);
+                var basicInstruction_aftTarget9 = LoadBasicInstruction(ref startInstruction, 31 * 4);
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_aftTarget7.Dst, BasicOperation(idx, basicInstruction_aftTarget7.Type, basicInstruction_aftTarget7.Dst, basicInstruction_aftTarget7.Src, basicInstruction_aftTarget7.Operand, registers));
@@ -267,6 +284,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             }
 
             return Digest(idx, registers, key);
+
         }
 
         #region Basic Operation
@@ -295,30 +313,12 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                 return (dst << (64 - operand)) ^ (dst >> operand);
             }
 
-            var a = dst ^ (ulong)operand;
-            var b = dst + (ulong)operand;
-
-            return BitwiseSelectPTX(type == (int)OpCode.XorConst, a, b);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [IntrinsicMethod(nameof(BitwiseSelectPTX_Generate))]
-        [IntrinsicImplementation]
-        private static ulong BitwiseSelectPTX(bool cond, ulong a, ulong b)
-        {
-            return 0;
-        }
-
-
-        private static void BitwiseSelectPTX_Generate(PTXBackend backend, PTXCodeGenerator codeGenerator, Value value)
-        {
-            var cond = (RegisterAllocator<PTXRegisterKind>.HardwareRegister)codeGenerator.LoadPrimitive(value[0]);
-            var a = (RegisterAllocator<PTXRegisterKind>.HardwareRegister)codeGenerator.LoadPrimitive(value[1]);
-            var b = (RegisterAllocator<PTXRegisterKind>.HardwareRegister)codeGenerator.LoadPrimitive(value[2]);
-            var ret = codeGenerator.AllocateHardware(value);
-
-            var command = codeGenerator.BeginCommand($"selp.u64 %{PTXRegisterAllocator.GetStringRepresentation(ret)}, %{PTXRegisterAllocator.GetStringRepresentation(a)}, %{PTXRegisterAllocator.GetStringRepresentation(b)},  %{PTXRegisterAllocator.GetStringRepresentation(cond)}");
-            command.Dispose();
+            if(type == (int)OpCode.XorConst)
+            {
+                return dst ^ (ulong)operand;
+            }
+            
+            return dst + (ulong)operand;
         }
 
         #endregion
@@ -326,7 +326,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         #region Loading Instruction
 
         [IntrinsicMethod(nameof(LoadInstruction_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe BasicInstruction LoadBasicInstruction(ref int startInstruction, int index)
         {
@@ -356,7 +356,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
 
         [IntrinsicMethod(nameof(LoadBranchInstruction_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe BranchInstruction LoadBranchInstruction(ref int startInstruction, int index)
         {
@@ -378,7 +378,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         }
 
         [IntrinsicMethod(nameof(LoadMultInstruction_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe MultIntruction LoadMultInstruction(ref int startInstruction, int index)
         {
@@ -404,7 +404,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         }
 
         [IntrinsicMethod(nameof(LoadTargetInstruction_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void LoadTargetInstruction()
         {
@@ -416,7 +416,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         }
 
         [IntrinsicMethod(nameof(LoadHighMultInstruction_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe HiMultInstruction LoadHighMultInstruction(ref int startInstruction, int index)
         {
@@ -446,7 +446,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         #region Multiply Add
 
         [IntrinsicMethod(nameof(Mad_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong Mad(ulong a, ulong b, ulong operand)
         {
@@ -473,7 +473,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         #region High Multiply 
 
         [IntrinsicMethod(nameof(Mulu64hi_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong Mul64hi(ulong a, ulong b)
         {
@@ -488,7 +488,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         }
 
         [IntrinsicMethod(nameof(Muli64hi_Generate))]
-        [IntrinsicImplementation]
+        //[IntrinsicImplementation]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long Mul64hi(long a, long b)
         {

@@ -160,7 +160,7 @@ namespace OrionClient
             AddSupportedHasher(new CudaBaselineGPUHasher());
             AddSupportedHasher(new CudaOptEmulationGPUHasher());
             AddSupportedHasher(new Cuda4090OptGPUHasher());
-            AddSupportedHasher(new OpenCLBaselineGPUHasher());
+            AddSupportedHasher(new OpenCLOptEmulationGPUHasher());
             AddSupportedHasher(new DisabledCPUHasher());
             AddSupportedHasher(new DisabledGPUHasher());
 
@@ -419,7 +419,7 @@ namespace OrionClient
 
                         if (_settings.GPUSetting.GPUHasher == "Disabled" || !_hashers.Any(x => x.Name == _settings.GPUSetting.GPUHasher))
                         {
-                            _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is OpenCLBaselineGPUHasher)?.Name ?? "Disabled";
+                            _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is OpenCLOptEmulationGPUHasher)?.Name ?? "Disabled";
                         }
                     }
                 }

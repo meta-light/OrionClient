@@ -45,7 +45,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         public override KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings)
         {
             int iterationCount = maxNonces * (ushort.MaxValue + 1);
-            int groupSize = CudaOptEmulationGPUHasher.HashxBlockSize;
+            int groupSize = HashxBlockSize;
 
             var g = Math.Log2(groupSize);
 

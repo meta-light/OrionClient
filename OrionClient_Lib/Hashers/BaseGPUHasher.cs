@@ -81,7 +81,7 @@ namespace OrionClientLib.Hashers
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CudaBaselineGPUHasher))] //Need to add for each GPU to run on linux
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CudaOptEmulationGPUHasher))] //Need to add for each GPU to run on linux
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Cuda4090OptGPUHasher))] //Need to add for each GPU to run on linux
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(OpenCLBaselineGPUHasher))] //Need to add for each GPU to run on linux
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(OpenCLOptEmulationGPUHasher))] //Need to add for each GPU to run on linux
         public async Task<(bool success, string message)> InitializeAsync(IPool pool, Settings settings)
         {
             if (Initialized)
@@ -816,6 +816,7 @@ namespace OrionClientLib.Hashers
 
                         using var marker1 = _accelerator.AddProfilingMarker();
                         _hashxKernel(_hashxConfig, deviceData.ProgramInstructions.View, deviceData.Keys.View, deviceData.Hashes.View);
+
                         using var marker2 = _accelerator.AddProfilingMarker();
                         _equihashKernel(_equihashConfig, deviceData.Hashes.View, deviceData.Solutions.View, deviceData.Heap.View, deviceData.SolutionCounts.View);
                         using var marker3 = _accelerator.AddProfilingMarker();
