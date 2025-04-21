@@ -89,7 +89,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             //Allows for more values on tile sorting to inccrease solution rate
             var fullShared = SharedMemory.Allocate<byte>(totalSharedBucketItems * sizeof(ulong) + totalSharedBucketItems * sizeof(ushort));
 
-            var sharedValues = fullShared.SubView(0, totalSharedBucketItems * sizeof(ulong)).Cast<ulong>();// Shared memory for each block
+            var sharedValues = fullShared.SubView(0, (totalSharedBucketItems + (extendedBucketItems - sharedBucketItems) * numBuckets) * sizeof(ulong)).Cast<ulong>();// Shared memory for each block
             var sharedIndices = fullShared.SubView(totalSharedBucketItems * sizeof(ulong), totalSharedBucketItems * sizeof(ushort)).Cast<ushort>();// Shared memory for each block
 
             #endregion
