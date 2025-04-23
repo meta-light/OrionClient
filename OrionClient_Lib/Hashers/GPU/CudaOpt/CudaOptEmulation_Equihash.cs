@@ -324,8 +324,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                     inverseBucketB = i != 0 ? (inverseBucketB - 1) & 0x7F : inverseBucketB;
 
-                    var bucketACount = bucketACounts[innerBucketA];
-                    var bucketBCount = bucketBCounts[inverseBucketB];
+                    var bucketACount = Math.Min(sharedBucketItems, bucketACounts[innerBucketA]);
+                    var bucketBCount = Math.Min(sharedBucketItems, bucketBCounts[inverseBucketB]);
 
                     if (bucketACount > innerBucketAIndex)
                     {
@@ -617,8 +617,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                     inverseBucketB = i != 0 ? (inverseBucketB - 1) & 0x7F : inverseBucketB;
 
-                    var bucketACount = bucketACounts[innerBucketA];
-                    var bucketBCount = bucketBCounts[inverseBucketB];
+                    var bucketACount = Math.Min(sharedBucketItems, bucketACounts[innerBucketA]);
+                    var bucketBCount = Math.Min(sharedBucketItems, bucketBCounts[inverseBucketB]);
 
                     if (bucketACount > innerBucketAIndex)
                     {
@@ -908,8 +908,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                     inverseBucketB = i != 0 ? (inverseBucketB - 1) & 0x7F : inverseBucketB;
 
-                    var bucketACount = bucketACounts[innerBucketA];
-                    var bucketBCount = bucketBCounts[inverseBucketB];
+                    var bucketACount = Math.Min(sharedBucketItems, bucketACounts[innerBucketA]);
+                    var bucketBCount = Math.Min(sharedBucketItems, bucketBCounts[inverseBucketB]);
 
                     if (bucketACount > innerBucketAIndex)
                     {
