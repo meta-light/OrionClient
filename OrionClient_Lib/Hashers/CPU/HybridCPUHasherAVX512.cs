@@ -20,6 +20,7 @@ namespace OrionClientLib.Hashers.CPU
     {
         public override string Name => "Hybrid AVX512";
         public override string Description => "C#/C Drillx implementation with minor AVX512 optimizations";
+        public override bool DisplaySetting => false;
 
         protected override void ExecuteThread(Tuple<int, int> range, ParallelLoopState loopState, ConcurrentQueue<Exception> exceptions)
         {
