@@ -288,21 +288,42 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         {
             ulong dst = LoadRegister(registers, dstId);
 
-            if (type != (int)OpCode.Rotate)
+            if (type <= (int)OpCode.Rotate)
             {
-                ulong src = 0;
+                ulong src = LoadRegister(registers, srcId);
 
-                LoadDualRegister(registers, srcId, ref src);
-
-                if (type == (int)OpCode.AddShift)
+                if (type != (int)OpCode.AddShift)
                 {
-                    return Mad(dst, src, (ulong)operand);
+                    return (dst << (64 - operand)) ^ (src >> operand);
                 }
 
-                return dst ^ src;
+                return Mad(dst, src, (ulong)operand);
             }
 
-            return dst.Ror(operand);
+            var a = dst ^ (ulong)operand;
+            var b = dst + (ulong)operand;
+
+            return BitwiseSelectPTX(type == (int)OpCode.XorConst, a, b);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [IntrinsicMethod(nameof(BitwiseSelectPTX_Generate))]
+        [IntrinsicImplementation]
+        private static ulong BitwiseSelectPTX(bool cond, ulong a, ulong b)
+        {
+            return 0;
+        }
+
+
+        private static void BitwiseSelectPTX_Generate(PTXBackend backend, PTXCodeGenerator codeGenerator, Value value)
+        {
+            var cond = (RegisterAllocator<PTXRegisterKind>.HardwareRegister)codeGenerator.LoadPrimitive(value[0]);
+            var a = (RegisterAllocator<PTXRegisterKind>.HardwareRegister)codeGenerator.LoadPrimitive(value[1]);
+            var b = (RegisterAllocator<PTXRegisterKind>.HardwareRegister)codeGenerator.LoadPrimitive(value[2]);
+            var ret = codeGenerator.AllocateHardware(value);
+
+            var command = codeGenerator.BeginCommand($"selp.u64 %{PTXRegisterAllocator.GetStringRepresentation(ret)}, %{PTXRegisterAllocator.GetStringRepresentation(a)}, %{PTXRegisterAllocator.GetStringRepresentation(b)},  %{PTXRegisterAllocator.GetStringRepresentation(cond)}");
+            command.Dispose();
         }
 
         #endregion

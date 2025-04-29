@@ -36,7 +36,7 @@ namespace OrionClientLib.Hashers
     {
         protected static readonly Logger _logger = LogManager.GetLogger("Main");
 
-        private const int _maxNonces = 2048;
+        private const int _maxNonces = 4096;
         private const int _maxQueueSize = 2;
 
         public IHasher.Hardware HardwareType => IHasher.Hardware.GPU;
@@ -79,8 +79,9 @@ namespace OrionClientLib.Hashers
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Interlocked))] //Needed for GPU
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CudaBaselineGPUHasher))] //Need to add for each GPU to run on linux
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CudaOptEmulationGPUHasher))] //Need to add for each GPU to run on linux
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Cuda4090OptGPUHasher))] //Need to add for each GPU to run on linux
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(OpenCLBaselineGPUHasher))] //Need to add for each GPU to run on linux
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(OpenCLOptEmulationGPUHasher))] //Need to add for each GPU to run on linux
         public async Task<(bool success, string message)> InitializeAsync(IPool pool, Settings settings)
         {
             if (Initialized)
@@ -303,29 +304,33 @@ namespace OrionClientLib.Hashers
                                 instruction.SetDestination((ulong)instruction.Dst);
                                 if (instruction.Type == OpCode.XorConst)
                                 {
-                                    instruction.SetType(OpCode.Xor);
-                                    instruction.Src = (int)instruction.Operand;
+                                    //instruction.SetType(OpCode.Xor);
+                                    //instruction.Src = (int)instruction.Operand;
 
-                                    if (instruction.Src < 8 && instruction.Src >= 0)
-                                    {
-                                        valid = false;
-                                        break;
-                                    }
+                                    //if (instruction.Src < 8 && instruction.Src >= 0)
+                                    //{
+                                    //    valid = false;
+                                    //    break;
+                                    //}
                                 }
                                 else if (instruction.Type == OpCode.AddConst)
                                 {
-                                    instruction.SetType(OpCode.Sub);
-                                    instruction.Src = ((int)instruction.Operand * -1);
+                                    //instruction.SetType(OpCode.Sub);
+                                    //instruction.Src = ((int)instruction.Operand * -1);
 
-                                    if (instruction.Src < 8 && instruction.Src >= 0)
-                                    {
-                                        valid = false;
-                                        break;
-                                    }
+                                    //if (instruction.Src < 8 && instruction.Src >= 0)
+                                    //{
+                                    //    valid = false;
+                                    //    break;
+                                    //}
                                 }
                                 else if (instruction.Type == OpCode.Branch)
                                 {
                                     instruction.Dst = instruction.Operand;
+                                }
+                                else if (instruction.Type == OpCode.Rotate)
+                                {
+                                    instruction.Src = instruction.Dst;
                                 }
 
                                 if (instruction.Type == OpCode.Sub)
@@ -443,7 +448,7 @@ namespace OrionClientLib.Hashers
         public abstract KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings);
         public abstract Action<ArrayView<ulong>, ArrayView<EquixSolution>, ArrayView<ushort>, ArrayView<uint>> EquihashKernel();
         public abstract KernelConfig GetEquihashKernelConfig(Device device, int maxNonces, Settings settings);
-        public abstract CudaCacheConfiguration CudaCacheOption();
+        public abstract (CudaCacheConfiguration, CudaCacheConfiguration) CudaCacheOption();
 
         public bool IsSupported()
         {
@@ -556,7 +561,7 @@ namespace OrionClientLib.Hashers
 
             public const ulong ProgramSize = (Instruction.TotalInstructions * Instruction.ByteSize);
             public const ulong KeySize = SipState.Size;
-            public const ulong HeapSize = 2239488;
+            public const ulong HeapSize = 2239488; //2097152 is required by new equihash
             public const ulong SolutionSize = EquixSolution.Size * EquixSolution.MaxLength;
             public const ulong HashSolutionSize = (ushort.MaxValue + 1) * sizeof(ulong);
             public const ulong MemoryPerNonce = (ProgramSize + KeySize + SolutionSize + HashSolutionSize) * _maxQueueSize + HeapSize;
@@ -581,7 +586,8 @@ namespace OrionClientLib.Hashers
             private KernelConfig _hashxConfig;
             private KernelConfig _equihashConfig;
             private HasherInfo _hasherInfo = new HasherInfo();
-
+            private CudaCacheConfiguration _hashxCacheConfiguration;
+            private CudaCacheConfiguration _equihashCacheConfiguration;
 
             private List<GPUDeviceData> _deviceData = new List<GPUDeviceData>();
 
@@ -620,7 +626,7 @@ namespace OrionClientLib.Hashers
                          BlockingCollection<CPUData> availableCPUData,
                          KernelConfig hashxConfig,
                          KernelConfig equihashConfig,
-                         CudaCacheConfiguration cacheConfiguration)
+                         (CudaCacheConfiguration hashxCacheConfiguration, CudaCacheConfiguration equihashCacheConfiguration) cacheOptions)
             {
                 _hashxMethod = hashxKernel;
                 _equihashMethod = equihashKernel;
@@ -631,13 +637,8 @@ namespace OrionClientLib.Hashers
                 _accelerator = accelerator;
                 _hashxConfig = hashxConfig;
                 _equihashConfig = equihashConfig;
-
-                if(accelerator is CudaAccelerator cudaAccelerator)
-                {
-                    //Equihash is better with equal or L1 preference
-                    //Baseline suffers with L1 preference
-                    cudaAccelerator.CacheConfiguration = cacheConfiguration;
-                }
+                _hashxCacheConfiguration = cacheOptions.hashxCacheConfiguration;
+                _equihashCacheConfiguration = cacheOptions.equihashCacheConfiguration;
             }
 
             public async void Initialize(int totalNonces)
@@ -671,6 +672,22 @@ namespace OrionClientLib.Hashers
 
                 _hashxKernel = _accelerator.LoadStreamKernel(_hashxMethod);
                 _equihashKernel = _accelerator.LoadStreamKernel(_equihashMethod);
+
+                if(_hashxKernel.TryGetKernel(out var kernel))
+                {
+                    if (kernel is CudaKernel cudaKernel)
+                    {
+                        CudaAPI.CurrentAPI.SetFuncCacheConfig(cudaKernel.FunctionPtr, _hashxCacheConfiguration);
+                    }
+                }
+
+                if (_equihashKernel.TryGetKernel(out kernel))
+                {
+                    if (kernel is CudaKernel cudaKernel)
+                    {
+                        CudaAPI.CurrentAPI.SetFuncCacheConfig(cudaKernel.FunctionPtr, _equihashCacheConfiguration);
+                    }
+                }
 
                 _logger.Log(LogLevel.Debug, $"Initialized GPU device: {_device.Name} [{_deviceId}]");
             }
@@ -799,6 +816,7 @@ namespace OrionClientLib.Hashers
 
                         using var marker1 = _accelerator.AddProfilingMarker();
                         _hashxKernel(_hashxConfig, deviceData.ProgramInstructions.View, deviceData.Keys.View, deviceData.Hashes.View);
+
                         using var marker2 = _accelerator.AddProfilingMarker();
                         _equihashKernel(_equihashConfig, deviceData.Hashes.View, deviceData.Solutions.View, deviceData.Heap.View, deviceData.SolutionCounts.View);
                         using var marker3 = _accelerator.AddProfilingMarker();

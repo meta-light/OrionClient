@@ -14,10 +14,11 @@ using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.GPU.Baseline
 {
-    public partial class CudaBaselineGPUHasher : BaseGPUHasher
+    public partial class CudaOptEmulationGPUHasher : BaseGPUHasher
     {
-        public override string Name => "Cuda Baseline";
-        public override string Description => "Baseline GPU hashing for Nvidia GPUs";
+        public override string Name => "Cuda (Emulation)";
+        public override string Description => "Cuda optimized hasher using an emulation kernel for hashx";
+        public override bool DisplaySetting => true;
 
         public override Action<ArrayView<Instruction>, ArrayView<SipState>, ArrayView<ulong>> HashxKernel()
         {
@@ -44,16 +45,16 @@ namespace OrionClientLib.Hashers.GPU.Baseline
         public override KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings)
         {
             int iterationCount = maxNonces * (ushort.MaxValue + 1);
-            int groupSize = settings.GPUSetting.GPUBlockSize;
+            int groupSize = HashxBlockSize;
 
             var g = Math.Log2(groupSize);
 
             //Invalid setting
             if ((int)g != g)
             {
-                groupSize = 512;
+                groupSize = 128;
             }
-            
+
             return new KernelConfig(
                 new Index3D((iterationCount + groupSize - 1) / groupSize, 1, 1),
                 new Index3D(groupSize, 1, 1)
@@ -62,8 +63,8 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
         public override KernelConfig GetEquihashKernelConfig(Device device, int maxNonces, Settings settings)
         {
-            int iterationCount = 128 * maxNonces;
-            int groupSize = 128;
+            int groupSize = 512;
+            int iterationCount = groupSize * maxNonces;
 
             return new KernelConfig(
                 new Index3D((iterationCount + groupSize - 1) / groupSize, 1, 1),
@@ -73,7 +74,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
         public override (CudaCacheConfiguration, CudaCacheConfiguration) CudaCacheOption()
         {
-            return (CudaCacheConfiguration.Default, CudaCacheConfiguration.PreferL1);
+            return (CudaCacheConfiguration.PreferShared, CudaCacheConfiguration.PreferShared);
         }
     }
 }

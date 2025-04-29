@@ -5,6 +5,7 @@ using ILGPU;
 using ILGPU.Runtime;
 using ILGPU.Runtime.Cuda;
 using ILGPU.Runtime.OpenCL;
+using OrionClientLib.Hashers.GPU.Baseline;
 using Solnet.Rpc.Models;
 using System;
 using System.Collections.Concurrent;
@@ -15,10 +16,10 @@ using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.GPU.AMDBaseline
 {
-    public partial class OpenCLBaselineGPUHasher : BaseGPUHasher
+    public partial class OpenCLOptEmulationGPUHasher : BaseGPUHasher
     {
-        public override string Name => "OpenCL Baseline";
-        public override string Description => "Baseline GPU hashing for AMD GPU";
+        public override string Name => "OpenCL (Emulation)";
+        public override string Description => "OpenCL hasher using an emulation kernel for hashx";
         public override bool Experimental => true;
 
         public override Action<ArrayView<Instruction>, ArrayView<SipState>, ArrayView<ulong>> HashxKernel()
@@ -40,23 +41,21 @@ namespace OrionClientLib.Hashers.GPU.AMDBaseline
                 return new List<Device>();
             }
 
-            return devices.Where(x => x.AcceleratorType != AcceleratorType.CPU && x is CLDevice).ToList();
+            return devices.Where(x => x.AcceleratorType != AcceleratorType.CPU && x is CLDevice && x.MaxNumThreadsPerGroup >= 512).ToList();
         }
 
         public override KernelConfig GetHashXKernelConfig(Device device, int maxNonces, Settings settings)
         {
             int iterationCount = maxNonces * (ushort.MaxValue + 1);
-            int groupSize = settings.GPUSetting.GPUBlockSize;
+            int groupSize = HashxBlockSize;
 
             var g = Math.Log2(groupSize);
 
             //Invalid setting
             if ((int)g != g)
             {
-                groupSize = 512;
+                groupSize = 128;
             }
-
-            groupSize = Math.Min(groupSize, device.MaxNumThreadsPerGroup);
 
             return new KernelConfig(
                 new Index3D((iterationCount + groupSize - 1) / groupSize, 1, 1),
@@ -66,8 +65,8 @@ namespace OrionClientLib.Hashers.GPU.AMDBaseline
 
         public override KernelConfig GetEquihashKernelConfig(Device device, int maxNonces, Settings settings)
         {
-            int iterationCount = 128 * maxNonces;
-            int groupSize = 128;
+            int groupSize = BlockSize;
+            int iterationCount = groupSize * maxNonces;
 
             return new KernelConfig(
                 new Index3D((iterationCount + groupSize - 1) / groupSize, 1, 1),
@@ -75,9 +74,9 @@ namespace OrionClientLib.Hashers.GPU.AMDBaseline
                 );
         }
 
-        public override CudaCacheConfiguration CudaCacheOption()
+        public override (CudaCacheConfiguration, CudaCacheConfiguration) CudaCacheOption()
         {
-            return CudaCacheConfiguration.PreferEqual;
+            return (CudaCacheConfiguration.PreferShared, CudaCacheConfiguration.PreferShared);
         }
     }
 }
