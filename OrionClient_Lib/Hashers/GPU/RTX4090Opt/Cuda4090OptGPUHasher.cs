@@ -17,6 +17,7 @@ namespace OrionClientLib.Hashers.GPU.RTX4090Opt
     {
         public override string Name => "4090 Optimized";
         public override string Description => "Optimized implementation for Nvidia RTX 4090 GPUs";
+        public override bool DisplaySetting => false;
 
         public override Action<ArrayView<Instruction>, ArrayView<SipState>, ArrayView<ulong>> HashxKernel()
         {

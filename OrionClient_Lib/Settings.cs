@@ -83,8 +83,8 @@ namespace OrionClientLib
             [OptionSettingValidation<int>(4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1)]
             public int MaxGPUNoncePerBatch { get; set; } = 2048;
 
-            [SettingDetails("Block Size", "Can try different values to see if HashX performance changes. GPU specific implementations will override this value.")]
-            [OptionSettingValidation<int>(512, 256, 128, 64, 32, 16)]
+            //[SettingDetails("Block Size", "Can try different values to see if HashX performance changes. GPU specific implementations will override this value.")]
+            //[OptionSettingValidation<int>(512, 256, 128, 64, 32, 16)]
             public int GPUBlockSize { get; set; } = 512;
 
             [SettingDetails("Program Generation Threads", "Total CPU threads to use to generation program instructions (0 = all threads)")]

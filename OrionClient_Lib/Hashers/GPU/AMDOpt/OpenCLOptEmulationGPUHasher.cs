@@ -20,7 +20,7 @@ namespace OrionClientLib.Hashers.GPU.AMDBaseline
     {
         public override string Name => "OpenCL (Emulation)";
         public override string Description => "OpenCL hasher using an emulation kernel for hashx";
-        public override bool Experimental => true;
+        public override bool Experimental => false;
 
         public override Action<ArrayView<Instruction>, ArrayView<SipState>, ArrayView<ulong>> HashxKernel()
         {

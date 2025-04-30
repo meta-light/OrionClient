@@ -157,9 +157,9 @@ namespace OrionClient
             AddSupportedHasher(new AVX512CPUHasher());
             //AddSupportedHasher(new NativeCPUHasher());
             AddSupportedHasher(new NativeCPUHasherAVX2());
-            AddSupportedHasher(new CudaBaselineGPUHasher());
+            //AddSupportedHasher(new CudaBaselineGPUHasher());
             AddSupportedHasher(new CudaOptEmulationGPUHasher());
-            AddSupportedHasher(new Cuda4090OptGPUHasher());
+            //AddSupportedHasher(new Cuda4090OptGPUHasher());
             AddSupportedHasher(new OpenCLOptEmulationGPUHasher());
             AddSupportedHasher(new DisabledCPUHasher());
             AddSupportedHasher(new DisabledGPUHasher());
