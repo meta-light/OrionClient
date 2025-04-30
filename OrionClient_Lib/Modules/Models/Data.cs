@@ -1,6 +1,12 @@
-﻿using OrionClientLib;
+﻿using Blake2Sharp;
+using ILGPU.Runtime.CPU;
+using ILGPU.Runtime.Cuda;
+using ILGPU.Runtime.OpenCL;
+using OrionClientLib;
 using OrionClientLib.Hashers;
 using OrionClientLib.Hashers.CPU;
+using OrionClientLib.Hashers.GPU.AMDBaseline;
+using OrionClientLib.Hashers.GPU.Baseline;
 using OrionClientLib.Pools;
 using OrionEventLib;
 using System;
@@ -46,7 +52,7 @@ namespace OrionClientLib.Modules.Models
         public (IHasher? cpu, IHasher? gpu) GetChosenHasher()
         {
             return (
-                Hashers.FirstOrDefault(x => x.Name == Settings.CPUSetting.CPUHasher && x.HardwareType == IHasher.Hardware.CPU) ?? Hashers.FirstOrDefault(x => x is DisabledCPUHasher), 
+                Hashers.FirstOrDefault(x => x.Name == Settings.CPUSetting.CPUHasher && x.HardwareType == IHasher.Hardware.CPU) ?? Hashers.FirstOrDefault(x => x is DisabledCPUHasher),
                 Hashers.FirstOrDefault(x => x.Name == Settings.GPUSetting.GPUHasher && x.HardwareType == IHasher.Hardware.GPU) ?? Hashers.FirstOrDefault(x => x is DisabledGPUHasher)
                 );
         }
@@ -55,7 +61,7 @@ namespace OrionClientLib.Modules.Models
         {
             IHasher bestHasher = null;
 
-            if(Avx512DQ.IsSupported)
+            if (Avx512DQ.IsSupported)
             {
                 bestHasher = Hashers.FirstOrDefault(x => x is AVX512CPUHasher);
             }
@@ -64,12 +70,49 @@ namespace OrionClientLib.Modules.Models
                 bestHasher = Hashers.FirstOrDefault(x => x is PartialCPUHasherAVX2);
             }
 
-            if(bestHasher == null)
+            if (bestHasher == null)
             {
                 bestHasher = Hashers.FirstOrDefault(x => x is ManagedCPUHasher);
             }
 
             return bestHasher ?? Hashers.FirstOrDefault(x => x is DisabledCPUHasher);
         }
+
+        public (IHasher hasher, List<int> devices) GetGPUSettingInfo(bool forceAMD)
+        {
+            var gpuHasher = (BaseGPUHasher)Hashers.FirstOrDefault(x => x is BaseGPUHasher);
+
+            var allDevices = gpuHasher.GetDevices(false);
+            List<int> gpuDevices = new List<int>();
+            IHasher chosenHasher = null;
+
+            if (!forceAMD && allDevices.Any(x => x is CudaDevice))
+            {
+                for (int i = 0; i < allDevices.Count; i++)
+                {
+                    if (allDevices[i] is CudaDevice cudaDevice)
+                    {
+                        gpuDevices.Add(i);
+                    }
+                }
+
+                chosenHasher = Hashers.FirstOrDefault(x => x is CudaOptEmulationGPUHasher);
+            }
+            else if (forceAMD || allDevices.Any(x => x is CLDevice))
+            {
+                for (int i = 0; i < allDevices.Count; i++)
+                {
+                    if (allDevices[i] is CLDevice cudaDevice)
+                    {
+                        gpuDevices.Add(i);
+                    }
+                }
+
+                chosenHasher = Hashers.FirstOrDefault(x => x is OpenCLOptEmulationGPUHasher);
+            }
+
+            return (chosenHasher, gpuDevices);
+        }
     }
 }
+

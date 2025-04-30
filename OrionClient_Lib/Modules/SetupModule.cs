@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,9 +34,12 @@ namespace OrionClientLib.Modules
         private Settings _settings => _data?.Settings;
         private CancellationTokenSource _cts;
         private string _errorMessage = String.Empty;
+        private bool _isKeypairSetup = false;
+        private bool _isSimpleSetup = false;
 
         public SetupModule()
         {
+            _steps.Add(SetupTypeAsync);
             _steps.Add(WalletSetupAsync);
             _steps.Add(ChoosePoolAsync);
             _steps.Add(ChooseCPUHasherAsync);
@@ -86,6 +90,70 @@ namespace OrionClientLib.Modules
             return (true, String.Empty);
         }
 
+        private async Task<int> SetupTypeAsync()
+        {
+            SelectionPrompt<string> selectionPrompt = new SelectionPrompt<string>();
+            selectionPrompt.WrapAround = true;
+
+            selectionPrompt.Title($"Step: {_currentStep + 1}/{_steps.Count}\n\nSetup type\n\tRecommend: CPU (100% usage) + GPU (if found)\n\tAdvanced: Manually choose each setting\n\tModify Keypair: Only modify keypair");
+
+            const string recommended = "Recommended";
+            const string advanced = "Advanced";
+            const string keypair = "Modify Keypair";
+            const string exit = "Exit";
+
+            selectionPrompt.AddChoice(recommended);
+            selectionPrompt.AddChoice(advanced);
+            selectionPrompt.AddChoice(keypair);
+            selectionPrompt.AddChoice(exit);
+
+            string response = await selectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
+
+            _isKeypairSetup = false;
+            _isSimpleSetup = false;
+
+            switch (response)
+            {
+                case recommended:
+                    _isSimpleSetup = true;
+                    SetRecommendedSettings();
+                    return _currentStep + 1;
+                case advanced:
+                    return _currentStep + 1;
+                case keypair:
+                    _isKeypairSetup = true;
+                    return _currentStep + 1;
+                case exit:
+                    return _steps.Count;
+                default:
+                    return _currentStep;
+            }
+
+            void SetRecommendedSettings()
+            {
+                //CPU settings
+                _settings.CPUSetting.CPUHasher = _data.GetBestCPUHasher().Name;
+                _settings.CPUSetting.CPUThreads = Environment.ProcessorCount;
+
+                //GPU settings
+                (IHasher hasher, List<int> devices) = _data.GetGPUSettingInfo(false);
+
+                _settings.GPUDevices = hasher == null ? new List<int>() : devices;
+                _settings.GPUSetting.GPUHasher = hasher?.Name ?? "Disabled"; //If no supported devices, will be empty
+
+                int threadReduction = _settings.GPUDevices.Count * 2;
+
+                _settings.CPUSetting.CPUThreads -= threadReduction;
+
+                //Not enough CPU threads left, disable CPU hashing
+                if(_settings.CPUSetting.CPUThreads <= 2)
+                {
+                    _settings.CPUSetting.CPUHasher = "Disabled";
+                }
+
+            }
+        }
+
         private async Task<int> WalletSetupAsync()
         {
             while (true)
@@ -97,35 +165,48 @@ namespace OrionClientLib.Modules
 
                 selectionPrompt.Title($"Step: {_currentStep + 1}/{_steps.Count}\n\nSetup solana wallet. Current: {publicKey ?? "??"}. Path: {(_settings.HasPrivateKey ? (_settings.KeyFile ?? "N/A") : "N/A")}");
 
+                const string confirm = "Confirm";
+                const string createNew = "Create New";
+                const string usePublicKey = "Use Public Key";
+                const string search = "Search / Set Filepath";
+                const string exit = "[aqua]<-- Previous Step[/]";
+
                 if (!String.IsNullOrEmpty(publicKey))
                 {
-                    selectionPrompt.AddChoice("Confirm");
+                    selectionPrompt.AddChoice(confirm);
                 }
 
-                selectionPrompt.EnableSearch();
+                if (_data.Pools.Any(x => !x.RequiresKeypair))
+                {
+                    selectionPrompt.AddChoice(usePublicKey);
+                }
 
-                selectionPrompt.AddChoice("Use Public Key");
-                selectionPrompt.AddChoice("Create New");
-                selectionPrompt.AddChoice("Search");
-                selectionPrompt.AddChoice("Exit");
+                selectionPrompt.AddChoice(createNew);
+                selectionPrompt.AddChoice(search);
+                selectionPrompt.AddChoice(exit);
 
                 string response = await selectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
 
-                switch (response.ToLower())
+                switch (response)
                 {
-                    case "confirm":
+                    case confirm:
+                        if(_isKeypairSetup)
+                        {
+                            return _steps.Count - 1;
+                        }
+
                         return _currentStep + 1;
-                    case "create new":
+                    case createNew:
                         await CreateNewWallet(solanaWallet);
                         break;
-                    case "search":
+                    case search:
                         await SearchWallet();
                         break;
-                    case "use public key":
+                    case usePublicKey:
                         await SetupPublicKey(publicKey);
                         break;
-                    case "exit":
-                        return _steps.Count;
+                    case exit:
+                        return _currentStep - 1;
                 }
             }
         }
@@ -306,7 +387,7 @@ namespace OrionClientLib.Modules
 
             if (coreInfo.Count == 0)
             {
-                choices.Add((Environment.ProcessorCount, "(100% usage) [green]Recommended[/]"));
+                choices.Add((Environment.ProcessorCount, "(100% usage) [green][[Recommended]][/]"));
                 choices.Add((1, "(single thread)"));
                 choices.Add((0, "Custom"));
             }
@@ -317,7 +398,7 @@ namespace OrionClientLib.Modules
 
                 totalThreads = Math.Max(totalThreads, Environment.ProcessorCount);
 
-                choices.Add((totalThreads, "(100% usage) [green]Recommended[/]"));
+                choices.Add((totalThreads, "(100% usage) [green][[Recommended]][/]"));
 
                 if (coreInfo.Count != totalThreads)
                 {
@@ -458,6 +539,11 @@ namespace OrionClientLib.Modules
             }
 
             _settings.Pool = chosenPool?.Name;
+
+            if(_isSimpleSetup)
+            {
+                return _steps.Count - 1;
+            }
 
             return _currentStep + 1;
         }

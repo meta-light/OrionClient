@@ -287,6 +287,7 @@ namespace OrionClient
         private static async Task<bool> HandleDefaultSettings(CommandLineOptions cmdOptions)
         {
             //Manually handle options
+            Data temp = new Data(_hashers, _pools, null, null, false);
 
             #region Main
 
@@ -367,8 +368,6 @@ namespace OrionClient
 
             if(cmdOptions.AutoSelectCPU)
             {
-                Data temp = new Data(_hashers, _pools, null, null, false);
-
                 _settings.CPUSetting.CPUHasher = temp.GetBestCPUHasher().Name;
             }
 
@@ -380,18 +379,10 @@ namespace OrionClient
             {
                 if (_settings.GPUDevices == null || _settings.GPUDevices.Count == 0)
                 {
-                    _settings.GPUDevices = new List<int>();
+                    (IHasher hasher, List<int> devices) = temp.GetGPUSettingInfo(cmdOptions.OpenCL);
 
-                    var gpuHasher = (BaseGPUHasher)_hashers.FirstOrDefault(x => x is BaseGPUHasher);
-
-                    var allDevices = gpuHasher.GetDevices(false);
-
-                    _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is CudaOptEmulationGPUHasher)?.Name ?? "Disabled";
-
-                    if (cmdOptions.OpenCL)
-                    {
-                        _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is OpenCLOptEmulationGPUHasher)?.Name ?? "Disabled";
-                    }
+                    _settings.GPUDevices = hasher == null ? new List<int>() : devices;
+                    _settings.GPUSetting.GPUHasher = hasher?.Name ?? "Disabled"; //If no supported devices, will be empty
                 }
             }
 
