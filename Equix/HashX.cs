@@ -1,10 +1,5 @@
 ﻿using DrillX.Compiler;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DrillX
 {
@@ -14,7 +9,7 @@ namespace DrillX
 
         public RuntimeProgram HashXProgram { get; private set; }
         public RuntimeOption Runtime { get; set; } = RuntimeOption.Interpret;
-        public SipState RegisterKey { get; private set;}
+        public SipState RegisterKey { get; private set; }
 
         private void* _compiledCode;
         public delegate* unmanaged[Cdecl]<ulong*, void> _compiledFunction;
@@ -127,7 +122,7 @@ namespace DrillX
 
         private bool BuildFromRng(SipRand rng)
         {
-            if(!RuntimeProgram.TryGenerate(rng, out RuntimeProgram program))
+            if (!RuntimeProgram.TryGenerate(rng, out RuntimeProgram program))
             {
                 return false;
             }

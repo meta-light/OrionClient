@@ -1,8 +1,5 @@
-﻿using Blake2Sharp;
-using Equix;
+﻿using Equix;
 using ILGPU.Runtime;
-using ILGPU.Runtime.Cuda;
-using ILGPU.Runtime.OpenCL;
 using Newtonsoft.Json;
 using OrionClientLib.Hashers;
 using OrionClientLib.Modules.Models;
@@ -13,14 +10,6 @@ using Solnet.Wallet.Bip39;
 using Solnet.Wallet.Utilities;
 using Spectre.Console;
 using Spectre.Console.Prompts;
-using Spectre.Console.Rendering;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules
 {
@@ -75,12 +64,12 @@ namespace OrionClientLib.Modules
                     _currentStep = await _steps[_currentStep]();
                 }
             }
-            catch(TaskCanceledException)
+            catch (TaskCanceledException)
             {
                 reloadSettings = true;
             }
 
-            if(reloadSettings)
+            if (reloadSettings)
             {
                 await _settings.ReloadAsync();
 
@@ -146,7 +135,7 @@ namespace OrionClientLib.Modules
                 _settings.CPUSetting.CPUThreads -= threadReduction;
 
                 //Not enough CPU threads left, disable CPU hashing
-                if(_settings.CPUSetting.CPUThreads <= 2)
+                if (_settings.CPUSetting.CPUThreads <= 2)
                 {
                     _settings.CPUSetting.CPUHasher = "Disabled";
                 }
@@ -190,7 +179,7 @@ namespace OrionClientLib.Modules
                 switch (response)
                 {
                     case confirm:
-                        if(_isKeypairSetup)
+                        if (_isKeypairSetup)
                         {
                             return _steps.Count - 1;
                         }
@@ -237,12 +226,12 @@ namespace OrionClientLib.Modules
                 return $"{chosenText}{hasher.Name} - {hasher.Description} {(hasher.Experimental ? "[red][[Experimental]][/]" : String.Empty)} {(isBest ? "[green][[Recommended]][/]" : String.Empty)}";
             });
 
-            selectionPrompt.AddChoices(_data.Hashers.Where(x => x.HardwareType == IHasher.Hardware.CPU && (_settings.GPUSetting.EnableExperimentalHashers || !x.Experimental)).OrderByDescending(x =>x == cpuHasher));
+            selectionPrompt.AddChoices(_data.Hashers.Where(x => x.HardwareType == IHasher.Hardware.CPU && (_settings.GPUSetting.EnableExperimentalHashers || !x.Experimental)).OrderByDescending(x => x == cpuHasher));
             selectionPrompt.AddChoice(null);
 
             cpuHasher = await selectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
 
-            if(cpuHasher == null)
+            if (cpuHasher == null)
             {
                 return _currentStep - 1;
             }
@@ -257,12 +246,12 @@ namespace OrionClientLib.Modules
         {
             (IHasher cpuHasher, IHasher gpuHasher) = _data.GetChosenHasher();
 
-            SelectionPrompt<IHasher> selectionPrompt = new SelectionPrompt<IHasher>(); 
+            SelectionPrompt<IHasher> selectionPrompt = new SelectionPrompt<IHasher>();
             selectionPrompt.WrapAround = true;
             selectionPrompt.Title($"Step: {_currentStep + 1}/{_steps.Count}\n\nSelect GPU hashing implementation. Run benchmark to see hashrates{(!String.IsNullOrEmpty(_errorMessage) ? $"\n[red]Error: {_errorMessage}[/]\n" : String.Empty)}");
             selectionPrompt.UseConverter((hasher) =>
             {
-                if(hasher == null)
+                if (hasher == null)
                 {
                     return "[aqua]<-- Previous Step[/]";
                 }
@@ -284,14 +273,14 @@ namespace OrionClientLib.Modules
 
             gpuHasher = await selectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
 
-            if(gpuHasher == null)
+            if (gpuHasher == null)
             {
                 return _currentStep - 1;
             }
 
             _settings.GPUSetting.GPUHasher = gpuHasher.Name;
 
-            if(gpuHasher is DisabledHasher)
+            if (gpuHasher is DisabledHasher)
             {
                 _settings.GPUSetting.GPUHasher = gpuHasher.Name;
 
@@ -302,7 +291,7 @@ namespace OrionClientLib.Modules
             List<Device> devices = hasher.GetDevices(false);
             HashSet<Device> validDevices = new HashSet<Device>(hasher.GetDevices(true));
 
-            if(validDevices.Count == 0)
+            if (validDevices.Count == 0)
             {
                 _errorMessage = "No valid GPUs found";
 
@@ -346,7 +335,7 @@ namespace OrionClientLib.Modules
                 return _currentStep + 1;
             }
 
-            foreach(var device in devices.OrderByDescending(x => x.NumMultiprocessors))
+            foreach (var device in devices.OrderByDescending(x => x.NumMultiprocessors))
             {
                 deviceSelectionPrompt.AddChoice(device, selectedDevices.Contains(device));
             }
@@ -358,7 +347,7 @@ namespace OrionClientLib.Modules
             {
                 result = await deviceSelectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
             }
-            catch(PromptAbortException)
+            catch (PromptAbortException)
             {
                 AnsiConsole.Clear();
 
@@ -437,7 +426,7 @@ namespace OrionClientLib.Modules
             selectionPrompt.Title($"Step: {_currentStep + 1}/{_steps.Count}\n\nSelect total threads. Highest value recommended. Current: {_settings.CPUSetting.CPUThreads}");
             selectionPrompt.UseConverter((tuple) =>
             {
-                if(tuple.Item1 > 0)
+                if (tuple.Item1 > 0)
                 {
                     return $"{tuple.Item1} {tuple.Item2}";
                 }
@@ -475,7 +464,7 @@ namespace OrionClientLib.Modules
         private async Task<int> ChoosePoolAsync()
         {
             IPool chosenPool = _data.GetChosenPool();
-            
+
             SelectionPrompt<IPool> selectionPrompt = new SelectionPrompt<IPool>();
             selectionPrompt.WrapAround = true;
             selectionPrompt.Title($"Step: {_currentStep + 1}/{_steps.Count}\n\nPool Selection{(!String.IsNullOrEmpty(_errorMessage) ? $"\n[red]Error: {_errorMessage}[/]\n" : String.Empty)}");
@@ -490,7 +479,7 @@ namespace OrionClientLib.Modules
 
                 string chosenText = String.Empty;
 
-                if(pool == chosenPool)
+                if (pool == chosenPool)
                 {
                     chosenText = "[b][[Current]][/] ";
                 }
@@ -503,7 +492,7 @@ namespace OrionClientLib.Modules
                 return $"{chosenText}{pool.DisplayName} - {pool.Description}";
             });
 
-            if(chosenPool == null)
+            if (chosenPool == null)
             {
                 selectionPrompt.AddChoices(_data.Pools);
             }
@@ -540,7 +529,7 @@ namespace OrionClientLib.Modules
 
             _settings.Pool = chosenPool?.Name;
 
-            if(_isSimpleSetup)
+            if (_isSimpleSetup)
             {
                 return _steps.Count - 1;
             }
@@ -596,12 +585,12 @@ namespace OrionClientLib.Modules
 
         private async Task CreateNewWallet(Wallet solanaWallet)
         {
-            if(solanaWallet != null)
+            if (solanaWallet != null)
             {
                 ConfirmationPrompt test = new ConfirmationPrompt($"Replace existing wallet ({solanaWallet.Account.PublicKey})?");
                 test.DefaultValue = false;
 
-                if(!await test.ShowAsync(AnsiConsole.Console, _cts.Token))
+                if (!await test.ShowAsync(AnsiConsole.Console, _cts.Token))
                 {
                     AnsiConsole.Clear();
 
@@ -623,7 +612,7 @@ namespace OrionClientLib.Modules
 
             string result = await selectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
 
-            if(result == "Confirm")
+            if (result == "Confirm")
             {
                 string keyFile = Path.Combine(executableDirectory, "id.json");
 
@@ -662,7 +651,7 @@ namespace OrionClientLib.Modules
                     case -2:
                         return "Exit";
                     default:
-                        if(i >= potentialWallets.Count)
+                        if (i >= potentialWallets.Count)
                         {
                             return "???";
                         }
@@ -671,7 +660,7 @@ namespace OrionClientLib.Modules
                 }
             });
 
-            for(int i = 0; i < potentialWallets.Count; i++)
+            for (int i = 0; i < potentialWallets.Count; i++)
             {
                 selectionPrompt.AddChoice(i);
             }
@@ -681,11 +670,11 @@ namespace OrionClientLib.Modules
 
             int selection = await selectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
 
-            if(selection >= 0)
+            if (selection >= 0)
             {
                 _settings.KeyFile = potentialWallets[selection].path;
             }
-            else if(selection == -1)
+            else if (selection == -1)
             {
                 while (true)
                 {
@@ -694,7 +683,7 @@ namespace OrionClientLib.Modules
                     string path = await filePath.ShowAsync(AnsiConsole.Console, _cts.Token);
                     AnsiConsole.Clear();
 
-                    if(String.IsNullOrEmpty(path))
+                    if (String.IsNullOrEmpty(path))
                     {
                         await SearchWallet();
                         return;
@@ -709,7 +698,7 @@ namespace OrionClientLib.Modules
 
                         ConfirmationPrompt prompt = new ConfirmationPrompt($"{reason} ({path}). Try again?");
 
-                        if(await prompt.ShowAsync(AnsiConsole.Console, _cts.Token))
+                        if (await prompt.ShowAsync(AnsiConsole.Console, _cts.Token))
                         {
                             continue;
                         }
@@ -730,7 +719,7 @@ namespace OrionClientLib.Modules
             //Adds to a list and returns
             async Task<Wallet> AddWallet(string file)
             {
-                if(!File.Exists(file))
+                if (!File.Exists(file))
                 {
                     return null;
                 }
@@ -752,7 +741,7 @@ namespace OrionClientLib.Modules
 
                     return wallet;
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     //Might be good to log reason, but should only fail due to user changing the file
 

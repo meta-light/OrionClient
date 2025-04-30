@@ -5,14 +5,6 @@ using ILGPU;
 using ILGPU.Runtime;
 using ILGPU.Runtime.Cuda;
 using ILGPU.Runtime.OpenCL;
-using OrionClientLib.Hashers.GPU.Baseline;
-using Solnet.Rpc.Models;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.GPU.AMDBaseline
 {

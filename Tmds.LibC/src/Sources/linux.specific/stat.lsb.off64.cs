@@ -18,17 +18,17 @@ namespace Tmds.Linux
         public static int mknod(byte* path, mode_t mode, dev_t dev)
             => _mknod(0, path, mode, &dev);
 
-        [DllImport(libc, SetLastError = true, EntryPoint="__xmknodat")]
-        private static extern int _mknodat(int ver, int dirfd, byte * path, mode_t mode, dev_t* dev);
-        [DllImport(libc, SetLastError = true, EntryPoint="__lxstat")]
-        private static extern int _lstat(int ver, byte* path, stat * stat);
-        [DllImport(libc, SetLastError = true, EntryPoint="__fxstatat")]
-        private static extern int _fstatat (int ver, int fd, byte* path, stat* stat, int flags);
-        [DllImport(libc, SetLastError = true, EntryPoint="__fxstat")]
-        private static extern int _fstat (int ver, int fd, stat* stat);
-        [DllImport(libc, SetLastError = true, EntryPoint="__xstat")]
-        private static extern int _stat (int ver, byte* path, stat* stat);
-        [DllImport(libc, SetLastError = true, EntryPoint="__xmknod")]
+        [DllImport(libc, SetLastError = true, EntryPoint = "__xmknodat")]
+        private static extern int _mknodat(int ver, int dirfd, byte* path, mode_t mode, dev_t* dev);
+        [DllImport(libc, SetLastError = true, EntryPoint = "__lxstat")]
+        private static extern int _lstat(int ver, byte* path, stat* stat);
+        [DllImport(libc, SetLastError = true, EntryPoint = "__fxstatat")]
+        private static extern int _fstatat(int ver, int fd, byte* path, stat* stat, int flags);
+        [DllImport(libc, SetLastError = true, EntryPoint = "__fxstat")]
+        private static extern int _fstat(int ver, int fd, stat* stat);
+        [DllImport(libc, SetLastError = true, EntryPoint = "__xstat")]
+        private static extern int _stat(int ver, byte* path, stat* stat);
+        [DllImport(libc, SetLastError = true, EntryPoint = "__xmknod")]
         private static extern int _mknod(int ver, byte* path, mode_t mode, dev_t* dev);
     }
 }

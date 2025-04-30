@@ -1,12 +1,5 @@
-﻿using OrionClientLib.Modules.Models;
-using OrionClientLib.Pools.Models;
+﻿using OrionClientLib.Pools.Models;
 using Solnet.Wallet;
-using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools.CoalPool
 {
@@ -86,7 +79,7 @@ namespace OrionClientLib.Pools.CoalPool
 
                 uint totalBoosts = data.ReadUInt();
 
-                for(int i = 0; i < totalBoosts; i++)
+                for (int i = 0; i < totalBoosts; i++)
                 {
                     OreBoost boost = new OreBoost();
                     boost.Parse(data);

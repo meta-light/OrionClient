@@ -1,10 +1,5 @@
 ﻿using Solnet.Wallet;
 using Spectre.Console;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools
 {
@@ -49,20 +44,20 @@ namespace OrionClientLib.Pools
                 {
                     TextPrompt<string> textPrompt = new TextPrompt<string>("Enter url for custom pool: ");
                     textPrompt.AllowEmpty();
-                    
-                    if(!String.IsNullOrEmpty(_poolSettings.CustomDomain))
+
+                    if (!String.IsNullOrEmpty(_poolSettings.CustomDomain))
                     {
                         textPrompt.DefaultValue($"{(_poolSettings.IsHttps == false ? "http" : "https")}://{_poolSettings.CustomDomain}");
                     }
 
                     textPrompt.Validate((str) =>
                     {
-                        if(String.IsNullOrEmpty(str))
+                        if (String.IsNullOrEmpty(str))
                         {
                             return true;
                         }
 
-                        if(Uri.TryCreate(str, UriKind.Absolute, out Uri _))
+                        if (Uri.TryCreate(str, UriKind.Absolute, out Uri _))
                         {
                             return true;
                         }
@@ -89,7 +84,7 @@ namespace OrionClientLib.Pools
                     {
                         response = $"http://{response}";
 
-                        if(!Uri.TryCreate(response, UriKind.Absolute, out customDomain))
+                        if (!Uri.TryCreate(response, UriKind.Absolute, out customDomain))
                         {
                             return (false, $"Invalid url");
                         }

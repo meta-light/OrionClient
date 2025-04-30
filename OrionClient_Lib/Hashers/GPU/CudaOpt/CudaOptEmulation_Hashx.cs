@@ -1,18 +1,11 @@
-﻿using DrillX.Compiler;
-using DrillX;
-using DrillX.Solver;
+﻿using DrillX;
+using DrillX.Compiler;
 using ILGPU;
-using ILGPU.Backends.PTX;
 using ILGPU.Backends;
-using ILGPU.IR.Intrinsics;
+using ILGPU.Backends.PTX;
 using ILGPU.IR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using ILGPU.IR.Intrinsics;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using ILGPU.Runtime.Cuda;
 
 namespace OrionClientLib.Hashers.GPU.Baseline
 {
@@ -84,7 +77,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             registers = SipHash24Ctr(idx, key, input, registers);
             bool allowBranch = true;
 
-            
+
             for (int i = 0; i < 16; i++)
             {
                 //ArrayView<int> startInstruction = program.SubView(i * Instruction.Size, Instruction.Size);
@@ -197,7 +190,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
 
                 //Basic Opt
                 Store(idx, registers, basicInstruction_aftTarget1.Dst, BasicOperation(idx, basicInstruction_aftTarget1.Type, basicInstruction_aftTarget1.Dst, basicInstruction_aftTarget1.Src, basicInstruction_aftTarget1.Operand, registers));
-                
+
                 var highMulInstruction = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 1 + BasicInstruction.Size * 11);
                 var basicInstruction_aftTarget3 = LoadBasicInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 11);
                 var multInstruction_aftTarget2 = LoadMultInstruction(ref startInstruction, BranchInstruction.Size + MultIntruction.Size * 7 + HiMultInstruction.Size * 2 + BasicInstruction.Size * 12);

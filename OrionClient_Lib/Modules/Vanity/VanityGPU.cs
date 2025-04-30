@@ -1,16 +1,13 @@
-﻿using DrillX.Solver;
-using Equix;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using ILGPU;
-using ILGPU.Runtime.Cuda;
+﻿using ILGPU;
 using ILGPU.Runtime;
+using ILGPU.Runtime.Cuda;
+using NLog;
 using OrionClientLib.Hashers.GPU;
 using OrionClientLib.Modules.Vanity;
-using System.Security.Cryptography;
-using NLog;
 using OrionClientLib.Utilities;
-using System.IO;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace OrionClientLib.Hashers
 {
@@ -67,7 +64,7 @@ namespace OrionClientLib.Hashers
             _running = true;
             VanitiesByLength.Values.ToList().ForEach(x => x.Reset());
             _threads = Environment.ProcessorCount;
-            if(settings.VanitySetting.VanityThreads > 0)
+            if (settings.VanitySetting.VanityThreads > 0)
             {
                 _threads = settings.VanitySetting.VanityThreads;
             }
@@ -85,9 +82,9 @@ namespace OrionClientLib.Hashers
             List<Device> devicesToUse = new List<Device>();
             HashSet<Device> supportedDevices = new HashSet<Device>(GetDevices(true));
 
-            foreach(var d in settings.VanitySetting.GPUDevices)
+            foreach (var d in settings.VanitySetting.GPUDevices)
             {
-                if(d >= 0 && d < devices.Count)
+                if (d >= 0 && d < devices.Count)
                 {
                     if (supportedDevices.Contains(devices[d]))
                     {
@@ -123,7 +120,7 @@ namespace OrionClientLib.Hashers
                     dHasher.OnHashrateUpdate += DHasher_OnHashrateUpdate;
                     _gpuDevices.Add(dHasher);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.Log(LogLevel.Error, ex, $"Failed to initialize device {device.Name} [{i}]. Reason: {ex.Message}");
                     dHasher?.Dispose();
@@ -210,7 +207,7 @@ namespace OrionClientLib.Hashers
                     _setupCPUData.TryAdd(cpuData);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, ex, $"Unknown exception occurred during GPU program generation. Message: {ex.Message}");
             }
@@ -226,13 +223,13 @@ namespace OrionClientLib.Hashers
             _running = false;
 
             List<Task> waitTasks = new List<Task>();
-            
+
             //Wait for all devices to stop
             _gpuDevices.ForEach(x => waitTasks.Add(x.WaitForStopAsync()));
             await Task.WhenAll(waitTasks);
 
             //Clean up CPU Data
-            while(_availableCPUData.TryTake(out var item) || _setupCPUData.TryTake(out item))
+            while (_availableCPUData.TryTake(out var item) || _setupCPUData.TryTake(out item))
             {
                 item.Dispose();
             }
@@ -290,7 +287,7 @@ namespace OrionClientLib.Hashers
 
         protected virtual List<Device> GetValidDevices(IEnumerable<Device> devices)
         {
-            if(devices == null)
+            if (devices == null)
             {
                 return new List<Device>();
             }
@@ -353,7 +350,7 @@ namespace OrionClientLib.Hashers
 
             public GPUDeviceHasher(Action<RunData> vanityKernel,
                          Accelerator accelerator, Device device, int deviceId,
-                         BlockingCollection<CPUData> readyCPUData, 
+                         BlockingCollection<CPUData> readyCPUData,
                          BlockingCollection<CPUData> availableCPUData,
                          int blockSize,
                          int threads
@@ -484,7 +481,7 @@ namespace OrionClientLib.Hashers
                                 _readyCPUData.TryAdd(cpuData);
                             }
 
-                            if(deviceData != null)
+                            if (deviceData != null)
                             {
                                 _copyToData.TryAdd(deviceData);
                             }
@@ -492,7 +489,7 @@ namespace OrionClientLib.Hashers
                             continue;
                         }
 
-                        if(cpuData.InUse)
+                        if (cpuData.InUse)
                         {
                             _logger.Log(LogLevel.Warn, $"CPUData currently in use");
                         }
@@ -532,7 +529,7 @@ namespace OrionClientLib.Hashers
 
                         if (_hasNotice)
                         {
-                            if(deviceData != null)
+                            if (deviceData != null)
                             {
                                 _copyToData.TryAdd(deviceData);
                             }
@@ -564,8 +561,8 @@ namespace OrionClientLib.Hashers
                 using var stream = _accelerator.CreateStream();
 
                 //Use a single set of CPU data here rather than reusing to prevent issues
-                using var publicKeys =  _accelerator.AllocatePageLocked1D<byte>(_maxBatchSize * CPUData.KeySize, false);
-                using var vanityKeys =  _accelerator.AllocatePageLocked1D<byte>(_maxBatchSize * CPUData.KeySize, false);
+                using var publicKeys = _accelerator.AllocatePageLocked1D<byte>(_maxBatchSize * CPUData.KeySize, false);
+                using var vanityKeys = _accelerator.AllocatePageLocked1D<byte>(_maxBatchSize * CPUData.KeySize, false);
 
                 try
                 {
@@ -580,7 +577,7 @@ namespace OrionClientLib.Hashers
 
                         if (_hasNotice)
                         {
-                            if(deviceData != null)
+                            if (deviceData != null)
                             {
                                 _copyToData.TryAdd(deviceData);
                             }
@@ -635,11 +632,11 @@ namespace OrionClientLib.Hashers
 
                         int foundLocation = 0;
 
-                        if(vanityTime.TotalSeconds > 1.5)
+                        if (vanityTime.TotalSeconds > 1.5)
                         {
                             UpdateConfig(_currentBatchSize / 2);
                         }
-                        else if(vanityTime.TotalSeconds <= 0.75)
+                        else if (vanityTime.TotalSeconds <= 0.75)
                         {
                             UpdateConfig(_currentBatchSize * 2);
                         }
@@ -654,17 +651,17 @@ namespace OrionClientLib.Hashers
                 {
                     _logger.Log(LogLevel.Error, $"Unknown exception occurred during GPU->CPU copying. Reason: {ex.Message}");
                 }
-    }
+            }
 
             public void ResetData()
             {
                 //Remove all from collections
-                while(_copyToData.TryTake(out var _) || _executeData.TryTake(out var _) || _copyFromData.TryTake(out var _))
+                while (_copyToData.TryTake(out var _) || _executeData.TryTake(out var _) || _copyFromData.TryTake(out var _))
                 {
 
                 }
 
-                foreach(var deviceData in _deviceData)
+                foreach (var deviceData in _deviceData)
                 {
                     deviceData.CurrentCPUData = null;
 
@@ -694,7 +691,7 @@ namespace OrionClientLib.Hashers
                 {
                     _accelerator?.Dispose();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.Log(LogLevel.Error, ex, $"Failed to clean up memory for GPU device");
                 }

@@ -4,15 +4,7 @@ using OrionClientLib.Pools.Models;
 using Solnet.Rpc;
 using Solnet.Wallet;
 using Spectre.Console;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools
 {
@@ -91,10 +83,10 @@ namespace OrionClientLib.Pools
             _sw.Elapsed += (sender, data) =>
             {
                 //Array item length must be the same as the table header length
-                OnMinerUpdate?.Invoke(this, 
+                OnMinerUpdate?.Invoke(this,
                     ([
-                        DateTime.Now.ToShortTimeString(), 
-                        _bestDifficulty?.BestDifficulty.ToString() ?? "0", 
+                        DateTime.Now.ToShortTimeString(),
+                        _bestDifficulty?.BestDifficulty.ToString() ?? "0",
                         (RandomNumberGenerator.GetInt32(0, 1000000000) / 1000000000.0).ToString()
                     ], null));
 
@@ -113,12 +105,12 @@ namespace OrionClientLib.Pools
             //Gets called whenever a hasher finds a higher difficulty for current challenge
 
             //Wrong id, ignore solution
-            if(info.ChallengeId != _challengeId)
+            if (info.ChallengeId != _challengeId)
             {
                 return;
             }
 
-            if(_bestDifficulty == null || _bestDifficulty.BestDifficulty < info.BestDifficulty)
+            if (_bestDifficulty == null || _bestDifficulty.BestDifficulty < info.BestDifficulty)
             {
                 _bestDifficulty = info;
             }
@@ -175,7 +167,7 @@ namespace OrionClientLib.Pools
             SelectionPrompt<string> selectionPrompt = new SelectionPrompt<string>();
             selectionPrompt.Title("Example title");
 
-            for(int i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
             {
                 selectionPrompt.AddChoice($"Choice {i}");
             }

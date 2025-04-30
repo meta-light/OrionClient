@@ -27,7 +27,8 @@ namespace Tmds.Linux
         public pid_t pid;
     }
 
-    public struct open_how {
+    public struct open_how
+    {
         public ulong flags;
         public ulong mode;
         public ulong resolve;
@@ -142,6 +143,6 @@ namespace Tmds.Linux
             return (int)syscall(__NR_openat2, dirfd, pathname, how, size);
         }
 
-        private static int  __NR_openat2 => 437;
+        private static int __NR_openat2 => 437;
     }
 }

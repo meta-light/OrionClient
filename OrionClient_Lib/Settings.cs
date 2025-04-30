@@ -1,19 +1,11 @@
 ﻿using Newtonsoft.Json;
 using OrionClientLib.Hashers;
-using OrionClientLib.Modules.Models;
 using OrionClientLib.Modules.SettingsData;
 using OrionClientLib.Pools;
 using OrionEventLib;
 using Solnet.Wallet;
 using Solnet.Wallet.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using static OrionClientLib.Settings.GPUSettings;
-using static OrionClientLib.Settings.VanitySettings;
 
 namespace OrionClientLib
 {
@@ -136,7 +128,7 @@ namespace OrionClientLib
                     return RPCProvider.Solana;
                 }
 
-                if(Url?.Contains("helius-rpc") == true)
+                if (Url?.Contains("helius-rpc") == true)
                 {
                     return RPCProvider.Helius;
                 }
@@ -222,9 +214,9 @@ namespace OrionClientLib
 
             PropertyInfo[] properties = typeof(Settings).GetProperties();
 
-            foreach(PropertyInfo property in properties)
+            foreach (PropertyInfo property in properties)
             {
-                if(property.SetMethod != null)
+                if (property.SetMethod != null)
                 {
                     var oldValue = property.GetValue(oldSettings);
                     property.SetValue(this, oldValue);
@@ -279,9 +271,9 @@ namespace OrionClientLib
 
         public async Task<(Wallet, string)> GetWalletAsync()
         {
-            if(!HasPrivateKey)
+            if (!HasPrivateKey)
             {
-                if(String.IsNullOrEmpty(PublicKey))
+                if (String.IsNullOrEmpty(PublicKey))
                 {
                     return default;
                 }
@@ -293,12 +285,12 @@ namespace OrionClientLib
                     byte[] key = encoder.DecodeData(PublicKey);
 
                     //Invalid length
-                    if(key.Length != 32)
+                    if (key.Length != 32)
                     {
                         return default;
                     }
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     return default;
                 }
@@ -306,12 +298,12 @@ namespace OrionClientLib
                 return (null, PublicKey);
             }
 
-            if(String.IsNullOrEmpty(KeyFile))
+            if (String.IsNullOrEmpty(KeyFile))
             {
                 return default;
             }
 
-            if(!File.Exists(KeyFile))
+            if (!File.Exists(KeyFile))
             {
                 return default;
             }
@@ -319,7 +311,7 @@ namespace OrionClientLib
             string text = await File.ReadAllTextAsync(KeyFile);
             byte[] keyPair = JsonConvert.DeserializeObject<byte[]>(text);
 
-            if(keyPair == null)
+            if (keyPair == null)
             {
                 return default;
             }

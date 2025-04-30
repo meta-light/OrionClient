@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using Tmds.Linux;
+﻿using Tmds.Linux;
 using Windows.Win32;
 using Windows.Win32.System.Memory;
 
@@ -24,7 +18,7 @@ namespace DrillX.Compiler
             {
                 mem = LibC.mmap(null, (size_t)bytes, LibC.PROT_READ | LibC.PROT_WRITE, LibC.MAP_ANONYMOUS | LibC.MAP_PRIVATE, -1, 0);
 
-                if(mem == LibC.MAP_FAILED)
+                if (mem == LibC.MAP_FAILED)
                 {
                     return null;
                 }
@@ -34,9 +28,9 @@ namespace DrillX.Compiler
                 throw new Exception("Unknown operating system");
             }
 
-//#if IGNORE_SECURITY_RISK
+            //#if IGNORE_SECURITY_RISK
             HashxVmRx(mem, new nuint(X86Compiler.CodeSize));
-//#endif
+            //#endif
 
             return mem;
         }

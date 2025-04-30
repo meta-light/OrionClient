@@ -1,30 +1,15 @@
-﻿using Blake2Sharp;
-using Chaos.NaCl;
-using Equix;
+﻿using Chaos.NaCl;
 using ILGPU.Runtime;
 using Newtonsoft.Json;
 using NLog;
 using OrionClientLib.Hashers;
-using OrionClientLib.Hashers.GPU.RTX4090Opt;
 using OrionClientLib.Modules.Models;
 using OrionClientLib.Modules.Vanity;
-using OrionClientLib.Pools;
-using OrionClientLib.Pools.Models;
 using OrionClientLib.Utilities;
-using Solnet.Wallet;
 using Solnet.Wallet.Utilities;
 using Spectre.Console;
 using Spectre.Console.Prompts;
-using Spectre.Console.Rendering;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
-using System.Runtime;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules
 {
@@ -126,7 +111,7 @@ namespace OrionClientLib.Modules
                 const string reload = "Reload Vanity File";
                 const string exit = "Exit";
 
-                if(_currentData.Settings.VanitySetting.GPUDevices?.Count > 0)
+                if (_currentData.Settings.VanitySetting.GPUDevices?.Count > 0)
                 {
                     selectionPrompt.AddChoice(run);
                     selectionPrompt.AddChoice(settings);
@@ -143,7 +128,7 @@ namespace OrionClientLib.Modules
                         case run:
                             return true;
                         case settings:
-                            if(!await DisplaySettings())
+                            if (!await DisplaySettings())
                             {
                                 return false;
                             }
@@ -165,16 +150,16 @@ namespace OrionClientLib.Modules
                             return false;
                     }
 
-                    if(_cts.IsCancellationRequested)
+                    if (_cts.IsCancellationRequested)
                     {
                         return false;
                     }
                 }
-                catch(OperationCanceledException)
+                catch (OperationCanceledException)
                 {
                     return false;
                 }
-                catch(PromptAbortException)
+                catch (PromptAbortException)
                 {
                     //Returns to main menu
                     AnsiConsole.Clear();
@@ -189,7 +174,7 @@ namespace OrionClientLib.Modules
                 SettingMenu menu = new SettingMenu(_currentData.Settings, _cts);
                 await menu.DisplaySettingMenu("Vanity Settings", _currentData.Settings.VanitySetting);
             }
-            catch(PromptAbortException)
+            catch (PromptAbortException)
             {
             }
 
@@ -292,13 +277,14 @@ namespace OrionClientLib.Modules
                 vanitySelectionPrompt.AbortKey = ConsoleKey.Escape;
                 vanitySelectionPrompt.PageSize = 20;
                 vanitySelectionPrompt.OnlyShowSearchedResults = true;
-                vanitySelectionPrompt.SearchFunc = (FoundVanity vanity, string search) => { 
-                    return vanity.VanityText.StartsWith(search, StringComparison.OrdinalIgnoreCase); 
+                vanitySelectionPrompt.SearchFunc = (FoundVanity vanity, string search) =>
+                {
+                    return vanity.VanityText.StartsWith(search, StringComparison.OrdinalIgnoreCase);
                 };
 
                 vanitySelectionPrompt.UseConverter((vanity) =>
                 {
-                    if(vanity.Exported)
+                    if (vanity.Exported)
                     {
                         return $"[green]{vanity.VanityText} - {vanity.PublicKey}[/]";
                     }
@@ -457,9 +443,9 @@ namespace OrionClientLib.Modules
                 );
             //_uiLayout["hashrate"].Ratio = 85;
             //_uiLayout["vanityInfo"].Ratio = 100;
-            
+
             _hashrateTable = new Table();
-            
+
             _hashrateTable.AddColumn(new TableColumn("Name").Centered());
             _hashrateTable.AddColumn(new TableColumn("Threads").Centered());
             _hashrateTable.AddColumn(new TableColumn("Session Hashrate").Centered());

@@ -1,5 +1,3 @@
-using System;
-
 namespace Tmds.Linux
 {
     public unsafe struct iovec

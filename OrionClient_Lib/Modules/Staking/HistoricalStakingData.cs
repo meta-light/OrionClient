@@ -1,10 +1,4 @@
-﻿using Solnet.Wallet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace OrionClientLib.Modules.Staking
 {
@@ -18,7 +12,7 @@ namespace OrionClientLib.Modules.Staking
 
         public void Calculate()
         {
-            foreach(var b in BoostData)
+            foreach (var b in BoostData)
             {
                 b.Value.Calculate();
             }
@@ -41,7 +35,7 @@ namespace OrionClientLib.Modules.Staking
 
             public void Calculate()
             {
-                if(TransactionCache.Count == 0)
+                if (TransactionCache.Count == 0)
                 {
                     return;
                 }
@@ -55,10 +49,10 @@ namespace OrionClientLib.Modules.Staking
                 {
                     StakeCheckpointTransaction transaction = TransactionCache[i];
 
-                    if(transaction.CheckpointStarted)
+                    if (transaction.CheckpointStarted)
                     {
                         //First transaction
-                        if(startTransaction == null)
+                        if (startTransaction == null)
                         {
                             startTransaction = transaction;
                         }
@@ -79,7 +73,7 @@ namespace OrionClientLib.Modules.Staking
                     prevTransaction = transaction;
                 }
 
-                if(startTransaction == null)
+                if (startTransaction == null)
                 {
                     return;
                 }
@@ -92,7 +86,7 @@ namespace OrionClientLib.Modules.Staking
                     CheckpointEnd = prevTransaction.Timestamp
                 });
 
-                for(int i = 0; i < historicalCheckpoints.Count - 1; i++)
+                for (int i = 0; i < historicalCheckpoints.Count - 1; i++)
                 {
                     var current = historicalCheckpoints[i];
                     var next = historicalCheckpoints[i + 1];

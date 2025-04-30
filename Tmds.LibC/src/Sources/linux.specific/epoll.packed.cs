@@ -1,7 +1,4 @@
-
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static Tmds.Linux.LibraryNames;
 
 namespace Tmds.Linux
 {

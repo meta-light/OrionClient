@@ -9,7 +9,6 @@ using Solnet.Wallet.Utilities;
 using Spectre.Console;
 using Spectre.Console.Prompts;
 using System.Reflection;
-using System.Runtime;
 using System.Text;
 
 namespace OrionClientLib.Modules
@@ -314,7 +313,7 @@ namespace OrionClientLib.Modules
                     await HandleSetting(details, _cts.Token);
                 }
             }
-            catch(PromptAbortException)
+            catch (PromptAbortException)
             {
                 reloadSettings = true;
             }
@@ -621,9 +620,9 @@ namespace OrionClientLib.Modules
                     newDetails.MenuName = attr.Name;
                     var v = property.GetValue(obj);
 
-                    if(menus.Length > 0)
+                    if (menus.Length > 0)
                     {
-                        if(!menus.Contains(v))
+                        if (!menus.Contains(v))
                         {
                             skip = true;
                         }

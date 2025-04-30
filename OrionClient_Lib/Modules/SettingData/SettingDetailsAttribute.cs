@@ -1,13 +1,6 @@
-﻿using OrionClientLib.Hashers;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Numerics;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules.SettingsData
 {
@@ -34,12 +27,12 @@ namespace OrionClientLib.Modules.SettingsData
     {
         public override bool Validate(object data)
         {
-            if(data == null)
+            if (data == null)
             {
                 return false;
             }
 
-            if(!int.TryParse(data.ToString(), out int totalThreads))
+            if (!int.TryParse(data.ToString(), out int totalThreads))
             {
                 return false;
             }
@@ -65,7 +58,7 @@ namespace OrionClientLib.Modules.SettingsData
             return Options.Contains((T)data);
         }
 
-        private List<C> GetExtendedClasses<C>(params object[] constructorArgs) 
+        private List<C> GetExtendedClasses<C>(params object[] constructorArgs)
         {
             List<C> objects = new List<C>();
 
@@ -87,19 +80,19 @@ namespace OrionClientLib.Modules.SettingsData
                 return false;
             }
 
-            if(data.ToString() == "localhost")
+            if (data.ToString() == "localhost")
             {
                 return true;
             }
 
             //Check url
-            if(Uri.TryCreate(data.ToString(), UriKind.Absolute, out Uri result))
+            if (Uri.TryCreate(data.ToString(), UriKind.Absolute, out Uri result))
             {
                 return true;
             }
 
             //Check IP
-            if(IPAddress.TryParse(data.ToString(), out IPAddress addres))
+            if (IPAddress.TryParse(data.ToString(), out IPAddress addres))
             {
                 return true;
             }

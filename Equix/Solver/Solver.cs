@@ -1,19 +1,9 @@
 ﻿using DrillX.Compiler;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Net.Sockets;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using Tmds.Linux;
-using Windows.Win32;
 using static SolverHeap;
 
 namespace DrillX.Solver
@@ -512,7 +502,7 @@ namespace DrillX.Solver
         {
             ulong* regs = (ulong*)computeSolutions + ushort.MaxValue + 1;
 
-            for (int i = 0; i <= ushort.MaxValue; i ++)
+            for (int i = 0; i <= ushort.MaxValue; i++)
             {
                 ((ulong*)computeSolutions)[i] = program.AsmCompiled((ulong)i, regs);
             }
@@ -798,7 +788,7 @@ namespace DrillX.Solver
             int totalBad = 0;
 
             HashSet<(uint, uint)> pairs = new HashSet<(uint, uint)>();
-            
+
             for (int i = 0; i < stage1Isndices.Length; i++)
             {
                 var vv = stage1Isndices[i];
@@ -816,8 +806,8 @@ namespace DrillX.Solver
                     continue;
                 }
 
-                if(!pairs.Add((a, b)))
-                    {
+                if (!pairs.Add((a, b)))
+                {
 
                 }
             }
@@ -950,7 +940,7 @@ namespace DrillX.Solver
             int totalBad = 0;
 
             HashSet<(uint, uint)> pairs = new HashSet<(uint, uint)>();
-            
+
             for (int i = 0; i < stage1Isndices.Length; i++)
             {
                 var vv = stage1Isndices[i];
@@ -968,8 +958,8 @@ namespace DrillX.Solver
                     continue;
                 }
 
-                if(!pairs.Add((a, b)))
-                    {
+                if (!pairs.Add((a, b)))
+                {
 
                 }
             }

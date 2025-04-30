@@ -1,8 +1,6 @@
-using in_port_t = System.UInt16;
-using in_addr_t = System.UInt32;
-using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using in_addr_t = System.UInt32;
+using in_port_t = System.UInt16;
 
 namespace Tmds.Linux
 {

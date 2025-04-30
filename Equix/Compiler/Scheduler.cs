@@ -1,8 +1,5 @@
-﻿global using ExecPorts = byte;
-global using ExecPortIndex = byte;
-
-using System.Collections;
-using System.Runtime.CompilerServices;
+﻿global using ExecPortIndex = byte;
+global using ExecPorts = byte;
 
 namespace DrillX.Compiler
 {
@@ -40,7 +37,7 @@ namespace DrillX.Compiler
 
             var dst = inst.Destination();
 
-            if(dst != null)
+            if (dst != null)
             {
                 _data.PlanRegisterWrite(dst.Value, plan.CycleRetired(inst.Type));
             }
@@ -49,7 +46,7 @@ namespace DrillX.Compiler
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool RegisterAvailable(RegisterId reg, Cycle cycle)
         {
-            return _data.RegisterAvailable(reg, cycle); 
+            return _data.RegisterAvailable(reg, cycle);
         }
 
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,7 +67,7 @@ namespace DrillX.Compiler
             var subCycle = _subCycle.AddUSize(n);
             var cycle = subCycle.Cycle();
 
-            if(cycle < Cycle.Target)
+            if (cycle < Cycle.Target)
             {
                 _subCycle = subCycle;
                 _cycle = cycle;
@@ -114,7 +111,7 @@ namespace DrillX.Compiler
         {
             Cycle max = 0;
 
-            for(int i = 0; i < Latencies.Length; i++)
+            for (int i = 0; i < Latencies.Length; i++)
             {
                 var cycle = Latencies[i];
 
@@ -133,7 +130,7 @@ namespace DrillX.Compiler
         {
             Ports = new PortSchedule[Model.NumExecutionPorts];
 
-            for(int i = 0; i < Ports.Length; i++)
+            for (int i = 0; i < Ports.Length; i++)
             {
                 Ports[i] = new PortSchedule();
             }
@@ -144,9 +141,9 @@ namespace DrillX.Compiler
         {
             var cycle = begin;
 
-            while(true)
+            while (true)
             {
-                for(int index = 0; index < Model.NumExecutionPorts; index++)
+                for (int index = 0; index < Model.NumExecutionPorts; index++)
                 {
                     if ((ports & (1 << index)) != 0 && !Ports[index].Busy.Get(cycle))
                     {
@@ -171,7 +168,7 @@ namespace DrillX.Compiler
 
             MarkMicroBusy(first);
 
-            if(second.HasValue)
+            if (second.HasValue)
             {
                 MarkMicroBusy(second.Value);
             }
@@ -182,21 +179,21 @@ namespace DrillX.Compiler
         {
             var mOp = Model.MicroOperations(op);
 
-            if(!mOp.optionalExecPort.HasValue)
+            if (!mOp.optionalExecPort.HasValue)
             {
                 return FromMicroPlans(MicroPlan(begin, mOp.execPort), null, out bool success);
             }
 
             var cycle = begin;
 
-            while(true)
+            while (true)
             {
                 var firstPlan = MicroPlan(cycle, mOp.execPort);
                 var secondPlan = MicroPlan(cycle, mOp.optionalExecPort.Value);
 
                 var result = FromMicroPlans(firstPlan, secondPlan, out bool success);
 
-                if(success)
+                if (success)
                 {
                     return result;
                 }
@@ -211,9 +208,9 @@ namespace DrillX.Compiler
             success = true;
             ExecPortIndex? secondPort = null;
 
-            if(secondOp.HasValue)
+            if (secondOp.HasValue)
             {
-                if(firstOp.Cycle == secondOp.Value.Cycle)
+                if (firstOp.Cycle == secondOp.Value.Cycle)
                 {
                     secondPort = secondOp.Value.ExecPortIndex;
                 }
@@ -255,7 +252,7 @@ namespace DrillX.Compiler
             var wordIndex = index / wordSize;
             var bitMask = 1ul << (index % wordSize);
 
-            if(value)
+            if (value)
             {
                 Inner[wordIndex] |= bitMask;
             }
@@ -339,7 +336,7 @@ namespace DrillX.Compiler
         {
             var result = Timestamp + n;
 
-            if(result < Max)
+            if (result < Max)
             {
                 return new SubCycle((ushort)result);
             }
@@ -379,7 +376,7 @@ namespace DrillX.Compiler
             MicroOpPlan plan1 = new MicroOpPlan(Cycle, FirstPort);
             MicroOpPlan? plan2 = null;
 
-            if(SecondPort.HasValue)
+            if (SecondPort.HasValue)
             {
                 plan2 = new MicroOpPlan(Cycle, SecondPort.Value);
             }

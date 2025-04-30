@@ -1,12 +1,6 @@
 ﻿using Newtonsoft.Json;
 using NLog;
-using OrionClientLib.Hashers.GPU.RTX4090Opt;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Utilities
 {
@@ -28,7 +22,7 @@ namespace OrionClientLib.Utilities
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Data))]
         public static async Task<Data> CheckForUpdates(string version)
         {
-            if(!Version.TryParse(version, out Version v))
+            if (!Version.TryParse(version, out Version v))
             {
                 return null;
             }
@@ -40,17 +34,17 @@ namespace OrionClientLib.Utilities
 
                 List<Data> releases = JsonConvert.DeserializeObject<List<Data>>(response);
 
-                if(releases.Count > 0)
+                if (releases.Count > 0)
                 {
                     var latestRelease = releases.OrderByDescending(x => x.CreatedAt).FirstOrDefault();
 
-                    if(Version.TryParse(latestRelease.TagName.Replace("v", ""), out Version newVersion) && newVersion > v)
+                    if (Version.TryParse(latestRelease.TagName.Replace("v", ""), out Version newVersion) && newVersion > v)
                     {
                         return latestRelease;
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, ex, $"Failed to check for updates. Reason: {ex.Message}");
             }

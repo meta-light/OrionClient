@@ -1,14 +1,7 @@
 ﻿using NLog;
-using OrionClientLib.Hashers.Models;
 using OrionClientLib.Pools.Models;
 using Solnet.Wallet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Net.WebSockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools
 {
@@ -51,7 +44,7 @@ namespace OrionClientLib.Pools
 
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, ex, $"Failed to connect to pool. Url: {WebsocketUrl}. Message: {ex.Message}");
             }
@@ -77,7 +70,7 @@ namespace OrionClientLib.Pools
 
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, ex, $"Failed to disconnect from websocket. Url: {WebsocketUrl}");
             }
@@ -97,7 +90,7 @@ namespace OrionClientLib.Pools
             {
                 return false;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to send websocket data. Message: {ex.Message}");
 
@@ -138,14 +131,14 @@ namespace OrionClientLib.Pools
                         data = nData;
                     }
 
-                    if(result.EndOfMessage)
+                    if (result.EndOfMessage)
                     {
                         OnMessage(buffer.Slice(0, currentCount).ToArray(), result.MessageType);
 
                         currentCount = 0;
                     }
                 }
-                catch(TaskCanceledException)
+                catch (TaskCanceledException)
                 {
                     //Ignore
                 }
@@ -156,10 +149,10 @@ namespace OrionClientLib.Pools
             }
 
             //Wasn't canceled, so try reconnecting
-            if(!_cts.IsCancellationRequested)
+            if (!_cts.IsCancellationRequested)
             {
                 _logger.Log(LogLevel.Warn, $"Websocket disconnected. Trying to reconnecting ...");
-                while(!_cts.IsCancellationRequested && !await ConnectAsync(_cts.Token))
+                while (!_cts.IsCancellationRequested && !await ConnectAsync(_cts.Token))
                 {
                     const int seconds = 5;
 

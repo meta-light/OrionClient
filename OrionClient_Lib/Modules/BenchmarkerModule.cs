@@ -1,19 +1,11 @@
-﻿using Blake2Sharp;
-using Equix;
+﻿using Equix;
 using NLog;
 using OrionClientLib.Hashers;
 using OrionClientLib.Hashers.Models;
 using OrionClientLib.Modules.Models;
 using Spectre.Console;
 using Spectre.Console.Rendering;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules
 {
@@ -64,7 +56,7 @@ namespace OrionClientLib.Modules
             hasherPrompt.AddChoiceGroup(data.Hashers.First(x => x is DisabledGPUHasher), data.Hashers.Where(x => x is not DisabledHasher && x.HardwareType == IHasher.Hardware.GPU && (!x.Experimental || data.Settings.GPUSetting.EnableExperimentalHashers)));
             hasherPrompt.UseConverter((hasher) =>
             {
-                if(hasher is DisabledCPUHasher)
+                if (hasher is DisabledCPUHasher)
                 {
                     return "CPU Hashers";
                 }
@@ -201,7 +193,7 @@ namespace OrionClientLib.Modules
 
             void SetAffinity()
             {
-                if(currentHasher.HardwareType != IHasher.Hardware.CPU || !OperatingSystem.IsWindows())
+                if (currentHasher.HardwareType != IHasher.Hardware.CPU || !OperatingSystem.IsWindows())
                 {
                     return;
                 }
@@ -273,7 +265,7 @@ namespace OrionClientLib.Modules
             currentInfo.CurrentRate = e;
 
             //Update data
-            if(e.ProgramGenerationTooLong)
+            if (e.ProgramGenerationTooLong)
             {
                 _render.UpdateCell(_hasherIndex, 1, $"[red]{currentInfo.CurrentRate.ChallengeSolutionsPerSecond}[/]");
             }
@@ -284,7 +276,7 @@ namespace OrionClientLib.Modules
             _render.UpdateCell(_hasherIndex, 2, currentInfo.MinRate.SolutionsPerSecond.ToString());
             _render.UpdateCell(_hasherIndex, 3, currentInfo.MaxRate.SolutionsPerSecond.ToString());
 
-            if(currentInfo.Hasher is IGPUHasher)
+            if (currentInfo.Hasher is IGPUHasher)
             {
                 _render.UpdateCell(_hasherIndex, 4, currentInfo.CurrentRate.HashxNoncesPerSecond.ToString());
                 _render.UpdateCell(_hasherIndex, 5, currentInfo.CurrentRate.EquihashNoncesPerSecond.ToString());

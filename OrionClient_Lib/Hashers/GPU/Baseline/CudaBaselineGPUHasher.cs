@@ -4,13 +4,6 @@ using DrillX.Solver;
 using ILGPU;
 using ILGPU.Runtime;
 using ILGPU.Runtime.Cuda;
-using Solnet.Rpc.Models;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.GPU.Baseline
 {
@@ -54,7 +47,7 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             {
                 groupSize = 512;
             }
-            
+
             return new KernelConfig(
                 new Index3D((iterationCount + groupSize - 1) / groupSize, 1, 1),
                 new Index3D(groupSize, 1, 1)

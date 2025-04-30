@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace Tmds.Linux
 {
     public static partial class LibC

@@ -1,6 +1,5 @@
 ﻿using OrionEventLib;
 using OrionEventLib.Events;
-using System.Buffers.Binary;
 using System.Net;
 using System.Reflection;
 using WebSocketSharp;
@@ -18,7 +17,7 @@ namespace OrionEventServerTester
             {
                 var eventType = GetEnumerableOfType<OrionEvent>(null).ToList();
 
-                foreach(var evType in eventType)
+                foreach (var evType in eventType)
                 {
                     _eventTypes.TryAdd((evType.EventType, evType.SubEventType), evType.GetType());
                 }
@@ -30,7 +29,7 @@ namespace OrionEventServerTester
                 EventDeserializer reader = new EventDeserializer(e.RawData);
                 reader.Skip(2); //Skip size
 
-                if(!_eventTypes.TryGetValue(((EventTypes)reader.ReadByte(), (SubEventTypes)reader.ReadByte()), out var t))
+                if (!_eventTypes.TryGetValue(((EventTypes)reader.ReadByte(), (SubEventTypes)reader.ReadByte()), out var t))
                 {
                     Console.WriteLine("Error: Invalid message");
                     return;
@@ -72,6 +71,6 @@ namespace OrionEventServerTester
             wssv.Stop();
         }
 
-       
+
     }
 }

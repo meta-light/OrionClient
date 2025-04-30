@@ -6,12 +6,7 @@ using ILGPU.Backends.PTX;
 using ILGPU.IR;
 using ILGPU.IR.Intrinsics;
 using ILGPU.Runtime.Cuda;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.GPU.RTX4090Opt
 {

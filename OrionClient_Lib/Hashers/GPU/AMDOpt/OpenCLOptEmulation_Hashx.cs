@@ -1,18 +1,10 @@
-﻿using DrillX.Compiler;
-using DrillX;
-using DrillX.Solver;
+﻿using DrillX;
+using DrillX.Compiler;
 using ILGPU;
-using ILGPU.Backends.PTX;
 using ILGPU.Backends;
-using ILGPU.IR.Intrinsics;
+using ILGPU.Backends.PTX;
 using ILGPU.IR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using ILGPU.Runtime.Cuda;
 
 namespace OrionClientLib.Hashers.GPU.AMDBaseline
 {
@@ -313,11 +305,11 @@ namespace OrionClientLib.Hashers.GPU.AMDBaseline
                 return (dst << (64 - operand)) ^ (dst >> operand);
             }
 
-            if(type == (int)OpCode.XorConst)
+            if (type == (int)OpCode.XorConst)
             {
                 return dst ^ (ulong)operand;
             }
-            
+
             return dst + (ulong)operand;
         }
 

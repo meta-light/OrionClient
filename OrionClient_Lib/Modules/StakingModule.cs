@@ -1,44 +1,22 @@
-﻿using Blake2Sharp;
-using Equix;
-using ILGPU.Runtime;
-using ILGPU.Runtime.Cuda;
-using ILGPU.Runtime.OpenCL;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using NLog;
 using OrionClientLib.CoinPrograms;
 using OrionClientLib.CoinPrograms.Ore;
-using OrionClientLib.Hashers;
 using OrionClientLib.Modules.Models;
-using OrionClientLib.Modules.SettingsData;
 using OrionClientLib.Modules.Staking;
-using OrionClientLib.Pools;
 using OrionClientLib.Utilities;
-using Solnet.Programs;
 using Solnet.Programs.Utilities;
 using Solnet.Rpc;
 using Solnet.Rpc.Core.Http;
 using Solnet.Rpc.Core.Sockets;
 using Solnet.Rpc.Models;
 using Solnet.Wallet;
-using Solnet.Wallet.Bip39;
 using Solnet.Wallet.Utilities;
 using Spectre.Console;
-using Spectre.Console.Rendering;
-using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.WebSockets;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules
 {
@@ -86,7 +64,7 @@ namespace OrionClientLib.Modules
                     await _streamingClient.DisconnectAsync();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to disconnect RPC streaming client. Message: {ex.Message}");
             }
@@ -109,12 +87,12 @@ namespace OrionClientLib.Modules
             {
                 Timeout = TimeSpan.FromSeconds(3)
             };
-             
+
             _cts = new CancellationTokenSource();
             _currentStep = 0;
             _data = data;
 
-            if(!await Setup())
+            if (!await Setup())
             {
                 return (false, "Failed to pull required information from RPC");
             }
@@ -141,12 +119,12 @@ namespace OrionClientLib.Modules
                 }
             }
 
-            if(_historicalData == null)
+            if (_historicalData == null)
             {
                 _historicalData = new HistoricalStakingData();
             }
 
-            foreach(var stake in _stakeInfo)
+            foreach (var stake in _stakeInfo)
             {
                 _historicalData.BoostData.TryAdd(stake.Boost.Name, new HistoricalStakingData.BoostRewardData(stake.Boost.CheckpointAddress));
             }
@@ -165,7 +143,7 @@ namespace OrionClientLib.Modules
                     }
                 }
             }
-            catch(OperationCanceledException)
+            catch (OperationCanceledException)
             {
                 return (true, String.Empty);
             }
@@ -185,25 +163,25 @@ namespace OrionClientLib.Modules
 
             var result = await SendWithRetry(() => _client.GetAccountInfoAsync(OreProgram.BoostConfig, Solnet.Rpc.Types.Commitment.Processed));
 
-            if(result == null || !result.WasSuccessful)
+            if (result == null || !result.WasSuccessful)
             {
                 return false;
             }
 
-            if(result != null)
+            if (result != null)
             {
                 BoostConfig directory = BoostConfig.Deserialize(Convert.FromBase64String(result.Result.Value.Data[0]));
 
                 List<PublicKey> newBoosts = new List<PublicKey>();
 
-                for(int i = 0; i < (int)directory.Length; i++)
+                for (int i = 0; i < (int)directory.Length; i++)
                 {
                     PublicKey boost = directory.Boosts[i];
 
                     StakeInformation stakeInfo = _stakeInfo.FirstOrDefault(x => x.Boost.BoostAddress.Equals(boost));
 
                     //New boost, add
-                    if(stakeInfo == null)
+                    if (stakeInfo == null)
                     {
                         newBoosts.Add(boost);
                     }
@@ -214,7 +192,7 @@ namespace OrionClientLib.Modules
                 }
 
                 //Will add the boosts in to see stake, but that's it
-                if(newBoosts.Count > 0)
+                if (newBoosts.Count > 0)
                 {
                     var boostResults = await SendWithRetry(() => _client.GetMultipleAccountsAsync(newBoosts.Select(x => x.Key).ToList(), Solnet.Rpc.Types.Commitment.Processed));
 
@@ -224,7 +202,7 @@ namespace OrionClientLib.Modules
                         {
                             var boostInfo = boostResults.Result.Value[i];
 
-                            if(boostInfo == null)
+                            if (boostInfo == null)
                             {
                                 continue;
                             }
@@ -249,7 +227,7 @@ namespace OrionClientLib.Modules
 
         private async Task<bool> DisplayOptions()
         {
-            if(_cts.IsCancellationRequested)
+            if (_cts.IsCancellationRequested)
             {
                 return false;
             }
@@ -311,7 +289,7 @@ namespace OrionClientLib.Modules
             {
                 AnsiConsole.Clear();
 
-                if(stakeChoice != null)
+                if (stakeChoice != null)
                 {
                     GenerateTable(stakeChoice);
                 }
@@ -321,7 +299,7 @@ namespace OrionClientLib.Modules
 
                 selectionPrompt.UseConverter((stakeInfo) =>
                 {
-                    if(stakeInfo == null)
+                    if (stakeInfo == null)
                     {
                         return $"Exit";
                     }
@@ -334,7 +312,7 @@ namespace OrionClientLib.Modules
 
                 stakeChoice = await selectionPrompt.ShowAsync(AnsiConsole.Console, _cts.Token);
 
-                if(stakeChoice == null)
+                if (stakeChoice == null)
                 {
                     return;
                 }
@@ -349,7 +327,7 @@ namespace OrionClientLib.Modules
 
                 List<Table> tableColumns = new List<Table>();
 
-                foreach(var day in rewardData.Days.OrderByDescending(x => x.DayStart))
+                foreach (var day in rewardData.Days.OrderByDescending(x => x.DayStart))
                 {
                     var date = DateTimeOffset.FromUnixTimeSeconds(day.DayStart).UtcDateTime;
 
@@ -362,8 +340,8 @@ namespace OrionClientLib.Modules
                     double lostRewards = hourlyRewards * TimeSpan.FromSeconds(day.TotalLockTime).TotalHours;
 
 
-                    table.AddRow($"Total", 
-                        $"{day.TotalRewards/OreProgram.OreDecimals:n11}", 
+                    table.AddRow($"Total",
+                        $"{day.TotalRewards / OreProgram.OreDecimals:n11}",
                         $"{PrettyFormatTime(TimeSpan.FromSeconds(day.TotalTime))}",
                         $"{PrettyFormatTime(TimeSpan.FromSeconds(day.TotalLockTime))}");
                     table.AddRow($"Hourly Rate", $"{hourlyRewards:n11}", "Lost Rewards", $"{lostRewards:n11}");
@@ -413,7 +391,7 @@ namespace OrionClientLib.Modules
 
                     while (keepPulling)
                     {
-                        if(_cts.IsCancellationRequested)
+                        if (_cts.IsCancellationRequested)
                         {
                             return;
                         }
@@ -500,12 +478,12 @@ namespace OrionClientLib.Modules
                     break;
             }
 
-            if(totalTransactions == 0)
+            if (totalTransactions == 0)
             {
                 return true;
             }
 
-            if(await AnsiConsole.AskAsync($"Continue (y/n)?", "y", _cts.Token) != "y")
+            if (await AnsiConsole.AskAsync($"Continue (y/n)?", "y", _cts.Token) != "y")
             {
                 return false;
             }
@@ -537,7 +515,7 @@ namespace OrionClientLib.Modules
 
                         TimeSpan eta = TimeSpan.Zero;
 
-                        if(counter > 0)
+                        if (counter > 0)
                         {
                             int remainingTransactions = boostTotalTransactions - counter;
 
@@ -570,7 +548,7 @@ namespace OrionClientLib.Modules
                             ++failedTransactions;
                             ++consecutiveFailures;
 
-                            if(consecutiveFailures > 10)
+                            if (consecutiveFailures > 10)
                             {
                                 AnsiConsole.MarkupLine($"[yellow]Constant failures. Most likely RPC does not have historical transactions[/]");
 
@@ -586,7 +564,7 @@ namespace OrionClientLib.Modules
                         List<PublicKey> accountKeys = transactionInfo.Message.AccountKeys.Select(x => new PublicKey(x)).ToList();
 
                         //Transaction failed, so safe to ignore
-                        if(transactionResult.Result.Meta.Error != null)
+                        if (transactionResult.Result.Meta.Error != null)
                         {
                             transaction.DataPulled = true;
                             continue;
@@ -635,14 +613,14 @@ namespace OrionClientLib.Modules
                             if (innerInstruction != null)
                             {
                                 //Parse out reward
-                                foreach(InstructionInfo innerInstructionInfo in innerInstruction.Instructions)
+                                foreach (InstructionInfo innerInstructionInfo in innerInstruction.Instructions)
                                 {
                                     PublicKey innerProgramId = accountKeys[innerInstructionInfo.ProgramIdIndex];
 
                                     //Ore program
-                                    if(innerProgramId.Equals(OreProgram.ProgramId))
+                                    if (innerProgramId.Equals(OreProgram.ProgramId))
                                     {
-                                        if(innerInstructionInfo.Data.Length > 0)
+                                        if (innerInstructionInfo.Data.Length > 0)
                                         {
                                             byte[] innerData = encoder.DecodeData(innerInstructionInfo.Data);
 
@@ -689,7 +667,7 @@ namespace OrionClientLib.Modules
                 return false;
             }
 
-            if(hasFailures)
+            if (hasFailures)
             {
                 await AnsiConsole.AskAsync<string>($"Press enter to continue", "", _cts.Token);
             }
@@ -706,7 +684,7 @@ namespace OrionClientLib.Modules
 
                 return true;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to save historical data");
 
@@ -751,7 +729,7 @@ namespace OrionClientLib.Modules
                             return;
                         }
 
-                        if(WindowSizeChange())
+                        if (WindowSizeChange())
                         {
                             return;
                         }
@@ -811,7 +789,7 @@ namespace OrionClientLib.Modules
                         stakingInfo.UserStake = stake.Balance / Math.Pow(10, stakingInfo.Boost.Decimal);
                         stakingInfo.Rewards = stake.CalculateRewards(stakingInfo.BoostInfo, stakingInfo.TotalStakers, _boostConfig) / OreProgram.OreDecimals;
 
-                        if(stakingInfo.Rewards > oldRewards)
+                        if (stakingInfo.Rewards > oldRewards)
                         {
                             AddMessage($"[[{stakingInfo.Boost.Name}]] Received [green]{stakingInfo.Rewards - oldRewards:0.00000000000}[/] ORE for the hour");
                         }
@@ -864,9 +842,9 @@ namespace OrionClientLib.Modules
                         stakingInfo.BoostInfo = boost;
                         stakingInfo.Locked = false;
 
-                        if(oldLocked != stakingInfo.Locked)
+                        if (oldLocked != stakingInfo.Locked)
                         {
-                            if(stakingInfo.Locked)
+                            if (stakingInfo.Locked)
                             {
                                 lockStart = DateTime.Now;
                             }
@@ -874,7 +852,7 @@ namespace OrionClientLib.Modules
                             //AddMessage($"[[{stakingInfo.Boost.Name}]] Boost has been {(boost.Locked > 0 ? $"[red]locked[/] to initiate payouts" : $"[green]unlocked[/] to receive rewards. Checkpoint time: {PrettyFormatTime(DateTime.Now - lockStart)}")}");
                         }
 
-                        if(oldMultiplier != stakingInfo.Multiplier)
+                        if (oldMultiplier != stakingInfo.Multiplier)
                         {
                             //AddMessage($"[[{stakingInfo.Boost.Name}]] Multiplier has been changed to [cyan]{stakingInfo.Multiplier:0.00}x[/]");
                         }
@@ -889,15 +867,15 @@ namespace OrionClientLib.Modules
 
                 int i = 0;
 
-                while(states.Any(x => x.State != SubscriptionStatus.Subscribed))
+                while (states.Any(x => x.State != SubscriptionStatus.Subscribed))
                 {
-                    if(i == 5)
+                    if (i == 5)
                     {
                         _errorMessage = $"[red]Failed to subscribe to all accounts[/]";
                         return false;
                     }
 
-                    if(states.Any(x => x.State == SubscriptionStatus.ErrorSubscribing))
+                    if (states.Any(x => x.State == SubscriptionStatus.ErrorSubscribing))
                     {
                         _errorMessage = $"[red]Failed to subscribe to all accounts with error '{states.FirstOrDefault(x => !String.IsNullOrEmpty(x.LastError))?.LastError}'[/]";
                         return false;
@@ -951,13 +929,13 @@ namespace OrionClientLib.Modules
         {
             var oreBoost = _stakeInfo.FirstOrDefault(x => x.Boost.Type == BoostInformation.PoolType.Ore);
 
-            if(_stakingTable == null || WindowSizeChange())
+            if (_stakingTable == null || WindowSizeChange())
             {
                 _stakingTable = new Table();
                 _stakingTable.Title($"Staking Information [[Ore: ${oreBoost.OreUSDValue:0.00}]]");
                 _stakingTable.AddColumns("LP", "Weight", "Stakers", "Total Stake", "Relative Yield", "User Stake", "Share", "Rewards");
                 _stakingTable.ShowRowSeparators = true;
-                foreach(var column in _stakingTable.Columns)
+                foreach (var column in _stakingTable.Columns)
                 {
                     column.RightAligned();
                 }
@@ -967,7 +945,7 @@ namespace OrionClientLib.Modules
                     var nextPayoutTime = (stakeInfo.LastPayout.AddHours(1) - DateTime.UtcNow);
 
                     //Calculate relative reward rate
-                    var relativeProfit = stakeInfo.Multiplier == 0 || stakeInfo.BoostTotalUSDValue  == 0? 0 : (double)oreBoost.BoostTotalUSDValue / ((double)stakeInfo.BoostTotalUSDValue / stakeInfo.Multiplier);
+                    var relativeProfit = stakeInfo.Multiplier == 0 || stakeInfo.BoostTotalUSDValue == 0 ? 0 : (double)oreBoost.BoostTotalUSDValue / ((double)stakeInfo.BoostTotalUSDValue / stakeInfo.Multiplier);
 
 
                     _stakingTable.AddRow(WrapBooleanColor(stakeInfo.Boost.Name, stakeInfo.Enabled, null, Color.Red),
@@ -975,7 +953,7 @@ namespace OrionClientLib.Modules
                                         stakeInfo.TotalStakers.ToString(),
                                         $"{stakeInfo.TotalBoostStake:0.###} (${stakeInfo.BoostTotalUSDValue:n2})",
                                         $"{relativeProfit / oreBoost.Multiplier:0.00}x",
-                                        $"{stakeInfo.UserStake:0.###} (${stakeInfo.UserStakeUSDValue:n2})", 
+                                        $"{stakeInfo.UserStake:0.###} (${stakeInfo.UserStakeUSDValue:n2})",
                                         $"{stakeInfo.SharePercent:0.####}%",
                                         WrapBooleanColor($"{stakeInfo.Rewards:n11} (${stakeInfo.RewardUSDValue:n2})", stakeInfo.Rewards > 0, Color.Green, null)
                                         );
@@ -984,8 +962,8 @@ namespace OrionClientLib.Modules
             else
             {
                 _stakingTable.Title($"Staking Information [[Ore: ${oreBoost.OreUSDValue:0.00}]]");
-                
-                for(int i = 0; i < _stakeInfo.Count; i++)
+
+                for (int i = 0; i < _stakeInfo.Count; i++)
                 {
                     var stakeInfo = _stakeInfo[i];
                     var nextPayoutTime = (stakeInfo.LastPayout.AddHours(1) - DateTime.UtcNow);
@@ -1011,7 +989,7 @@ namespace OrionClientLib.Modules
             _historicalTable.AddColumns(_stakeInfo.Select(x => $"{x.Boost.Name} [[lock time]]").ToArray());
 
             //Add rows
-            foreach(var day in _historicalData.BoostData.SelectMany(x => x.Value.Days).GroupBy(x => x.DayStart).OrderByDescending(x => x.Key))
+            foreach (var day in _historicalData.BoostData.SelectMany(x => x.Value.Days).GroupBy(x => x.DayStart).OrderByDescending(x => x.Key))
             {
                 var currentDay = DateTime.UtcNow.Date;
                 var firstDay = DateTimeOffset.FromUnixTimeSeconds(day.Key).LocalDateTime;
@@ -1020,7 +998,7 @@ namespace OrionClientLib.Modules
 
                 List<string> rowData = new List<string> { $"{firstDay:M/d}{(currentDay == firstDay ? $" ({PrettyFormatTime(remainingTime)} left)" : String.Empty)}" };
 
-                foreach(var stakeInfo in _stakeInfo)
+                foreach (var stakeInfo in _stakeInfo)
                 {
                     //Find day information
                     var dayInfo = day.FirstOrDefault(x => x.BoostName == stakeInfo.Boost.CheckpointAddress);
@@ -1059,7 +1037,7 @@ namespace OrionClientLib.Modules
 
             await AnsiConsole.Status().StartAsync($"Updating staking info", async ctx =>
             {
-                if(await UpdateBoostInformation())
+                if (await UpdateBoostInformation())
                 {
                     AnsiConsole.MarkupLine($"[green]Successfully updated staking info[/]");
                 }
@@ -1070,7 +1048,7 @@ namespace OrionClientLib.Modules
 
                 ctx.Status("Updating Kamino pool info ...");
 
-                if(await UpdateKaminoPoolInfo(_stakeInfo.Where(x => x.Boost.Type == BoostInformation.PoolType.Kamino)))
+                if (await UpdateKaminoPoolInfo(_stakeInfo.Where(x => x.Boost.Type == BoostInformation.PoolType.Kamino)))
                 {
                     AnsiConsole.MarkupLine($"[green]Successfully updated kamino pool info[/]");
                 }
@@ -1092,7 +1070,7 @@ namespace OrionClientLib.Modules
 
                 ctx.Status("Grabbing prices from Coin Gecko...");
 
-                if(await UpdatePrices())
+                if (await UpdatePrices())
                 {
                     AnsiConsole.MarkupLine($"[green]Successfully updated prices[/]");
                 }
@@ -1117,9 +1095,9 @@ namespace OrionClientLib.Modules
 
                 var priceData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, decimal>>>(data);
 
-                foreach(var s in _stakeInfo)
+                foreach (var s in _stakeInfo)
                 {
-                    if(priceData.TryGetValue("ore", out var v))
+                    if (priceData.TryGetValue("ore", out var v))
                     {
                         s.OreUSDValue = v["usd"];
                     }
@@ -1135,7 +1113,7 @@ namespace OrionClientLib.Modules
 
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to pull prices from Coin Gecko. Message: {ex.Message}");
 
@@ -1149,7 +1127,7 @@ namespace OrionClientLib.Modules
 
             const int baseAccountSize = 5;
 
-            foreach(var info in _stakeInfo)
+            foreach (var info in _stakeInfo)
             {
                 accounts.Add(info.Boost.BoostAddress);
                 accounts.Add(info.StakeAccount);
@@ -1172,7 +1150,7 @@ namespace OrionClientLib.Modules
 
             var result = await SendWithRetry(() => _client.GetMultipleAccountsAsync(accounts, Solnet.Rpc.Types.Commitment.Confirmed));
 
-            if(result == null)
+            if (result == null)
             {
                 return false;
             }
@@ -1193,7 +1171,7 @@ namespace OrionClientLib.Modules
                     var ll = accounts.Skip(x * limitPerCall).Take(limitPerCall).ToList();
 
                     //Easier
-                    if(ll.Count == 0)
+                    if (ll.Count == 0)
                     {
                         break;
                     }
@@ -1244,7 +1222,7 @@ namespace OrionClientLib.Modules
                 BoostInformation.PoolType poolType = stakeInfo.Boost.Type;
 
                 //Meteora has slow updates for their API, so pulling on-chain data
-                if(poolType == BoostInformation.PoolType.Meteora)
+                if (poolType == BoostInformation.PoolType.Meteora)
                 {
                     var lpVaultA = tAccounts[5];
                     var lpVaultB = tAccounts[6];
@@ -1277,7 +1255,7 @@ namespace OrionClientLib.Modules
                     stakeInfo.TotalTokenBStaked = (decimal)(tokenBAmount / Math.Pow(10, stakeInfo.Boost.ExtraData.TokenBDecimal));
                 }
 
-                if(boostData != null)
+                if (boostData != null)
                 {
                     Boost boost = Boost.Deserialize(Convert.FromBase64String(boostData.Data[0]));
 
@@ -1287,14 +1265,14 @@ namespace OrionClientLib.Modules
                     stakeInfo.BoostInfo = boost;
                     //stakeInfo.Locked = boost.Locked > 0;
 
-                    if(poolType == BoostInformation.PoolType.Ore)
+                    if (poolType == BoostInformation.PoolType.Ore)
                     {
                         stakeInfo.TotalOreStaked = (decimal)stakeInfo.TotalBoostStake;
                         stakeInfo.TotalLPStake = (decimal)stakeInfo.TotalBoostStake;
                     }
                 }
 
-                if(proofData != null)
+                if (proofData != null)
                 {
                     Proof proof = Proof.Deserialize(Convert.FromBase64String(proofData.Data[0]));
 
@@ -1308,7 +1286,7 @@ namespace OrionClientLib.Modules
                     stakeInfo.LastPayout = checkpoint.LastCheckPoint.UtcDateTime;
                 }
 
-                if(stakeData != null)
+                if (stakeData != null)
                 {
                     Stake stake = Stake.Deserialize(Convert.FromBase64String(stakeData.Data[0]));
 
@@ -1330,7 +1308,7 @@ namespace OrionClientLib.Modules
         private async Task<bool> UpdateKaminoPoolInfo(IEnumerable<StakeInformation> boostsToUpdate)
         {
             //No need to update
-            if(boostsToUpdate.Count() == 0 || !boostsToUpdate.Any(x => x.LastUpdated.AddMinutes(PoolUpdateDelayMin) <= DateTime.UtcNow))
+            if (boostsToUpdate.Count() == 0 || !boostsToUpdate.Any(x => x.LastUpdated.AddMinutes(PoolUpdateDelayMin) <= DateTime.UtcNow))
             {
                 return true;
             }
@@ -1341,11 +1319,11 @@ namespace OrionClientLib.Modules
 
                 List<KaminoPoolData> poolData = JsonConvert.DeserializeObject<List<KaminoPoolData>>(data);
 
-                foreach(StakeInformation boost in boostsToUpdate)
+                foreach (StakeInformation boost in boostsToUpdate)
                 {
                     KaminoPoolData boostData = poolData.FirstOrDefault(x => x.Strategy == boost.Boost.PoolAddress);
 
-                    if(boostData == null)
+                    if (boostData == null)
                     {
                         continue;
                     }
@@ -1362,7 +1340,7 @@ namespace OrionClientLib.Modules
 
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to grab kamino LP info. Ex: {ex.Message}");
 
@@ -1386,7 +1364,7 @@ namespace OrionClientLib.Modules
 
                     List<MeteroaPoolInfo> poolData = JsonConvert.DeserializeObject<List<MeteroaPoolInfo>>(data);
 
-                    if(poolData != null && poolData.Count > 0)
+                    if (poolData != null && poolData.Count > 0)
                     {
                         MeteroaPoolInfo poolInfo = poolData[0];
 
@@ -1412,21 +1390,21 @@ namespace OrionClientLib.Modules
         {
             RequestResult<T> lastResult = default;
 
-            for (int i =0; i < retryCount; i++)
+            for (int i = 0; i < retryCount; i++)
             {
-                if(_cts.IsCancellationRequested)
+                if (_cts.IsCancellationRequested)
                 {
                     return lastResult;
                 }
 
                 lastResult = await request();
 
-                if(lastResult.WasSuccessful)
+                if (lastResult.WasSuccessful)
                 {
                     return lastResult;
                 }
 
-                if(lastResult.HttpStatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                if (lastResult.HttpStatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
                     await Task.Delay(rateLimitDelay, _cts.Token);
 
@@ -1452,7 +1430,7 @@ namespace OrionClientLib.Modules
 
         private string WrapBooleanColor(string text, bool result, Color? successColor, Color? failedColor)
         {
-            if(result && successColor.HasValue)
+            if (result && successColor.HasValue)
             {
                 return $"[{successColor}]{text}[/]";
             }

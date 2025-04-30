@@ -1,18 +1,10 @@
 ﻿using DrillX;
-using DrillX.Compiler;
 using DrillX.Solver;
 using Equix;
-using System;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.CPU
 {

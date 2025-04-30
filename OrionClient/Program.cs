@@ -1,40 +1,24 @@
-﻿using Equix;
-using ILGPU;
-using ILGPU.IR;
+﻿using CommandLine;
+using ILGPU.Runtime.Cuda;
 using NLog;
+using OrionClient.Commands;
 using OrionClientLib;
 using OrionClientLib.Hashers;
 using OrionClientLib.Hashers.CPU;
-using OrionClientLib.Hashers.GPU;
-using OrionClientLib.Hashers.GPU.RTX4090Opt;
+using OrionClientLib.Hashers.GPU.AMDBaseline;
 using OrionClientLib.Hashers.GPU.Baseline;
-using OrionClientLib.Hashers.Models;
 using OrionClientLib.Modules;
 using OrionClientLib.Modules.Models;
 using OrionClientLib.Pools;
-using OrionClientLib.Pools.CoalPool;
-using OrionClientLib.Pools.HQPool;
+using OrionClientLib.Utilities;
+using OrionEventLib;
 using Solnet.Wallet;
 using Spectre.Console;
-using Spectre.Console.Rendering;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using System.Windows.Input;
-using System.Diagnostics;
-using OrionClientLib.Hashers.GPU.AMDBaseline;
-using OrionClientLib.Utilities;
-using ILGPU.Runtime.Cuda;
-using CommandLine;
-using Microsoft.Extensions.Options;
-using System.Security.Cryptography.X509Certificates;
-using ILGPU.Runtime.OpenCL;
-using System.Buffers.Binary;
-using OrionClient.Commands;
-using OrionEventLib;
 
 namespace OrionClient
 {
@@ -61,7 +45,7 @@ namespace OrionClient
 
         private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
-            if (OperatingSystem.IsLinux() && (libraryName  == "nvcuda" || libraryName == "cuda"))
+            if (OperatingSystem.IsLinux() && (libraryName == "nvcuda" || libraryName == "cuda"))
             {
                 if (String.IsNullOrEmpty(_cudaLocation))
                 {
@@ -329,11 +313,11 @@ namespace OrionClient
 
             #region Pool Settings
 
-            if(!String.IsNullOrEmpty(cmdOptions.Pool))
+            if (!String.IsNullOrEmpty(cmdOptions.Pool))
             {
                 IPool chosenPool = _pools.FirstOrDefault(x => x.ArgName == cmdOptions.Pool.ToLower());
 
-                if(chosenPool == null)
+                if (chosenPool == null)
                 {
                     AnsiConsole.MarkupLine($"[red]Error: [green]--pool[/] value '[cyan]{cmdOptions.Pool}[/]' is invalid. Valid values: {String.Join(", ", _pools.Select(x => x.ArgName))}[/]");
 
@@ -366,7 +350,7 @@ namespace OrionClient
                 _settings.CPUSetting.CPUHasher = "Disabled";
             }
 
-            if(cmdOptions.AutoSelectCPU)
+            if (cmdOptions.AutoSelectCPU)
             {
                 _settings.CPUSetting.CPUHasher = temp.GetBestCPUHasher().Name;
             }
@@ -436,12 +420,12 @@ namespace OrionClient
 
             #region Events
 
-            if(!String.IsNullOrEmpty(cmdOptions.WebsocketUrl))
+            if (!String.IsNullOrEmpty(cmdOptions.WebsocketUrl))
             {
                 _settings.EventWebsocketSetting.WebsocketUrl = cmdOptions.WebsocketUrl;
             }
 
-            if(cmdOptions.Port.HasValue)
+            if (cmdOptions.Port.HasValue)
             {
                 _settings.EventWebsocketSetting.Port = cmdOptions.Port.Value;
             }
@@ -456,7 +440,7 @@ namespace OrionClient
                 _settings.EventWebsocketSetting.ReconnectTimeMs = cmdOptions.ReconnectTimeMs.Value;
             }
 
-            if(cmdOptions.Serialization.HasValue)
+            if (cmdOptions.Serialization.HasValue)
             {
                 _settings.EventWebsocketSetting.Serialization = cmdOptions.Serialization.Value;
             }
@@ -469,7 +453,7 @@ namespace OrionClient
         private static async void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
         {
             //Allow exit
-            if(_currentModule == null || _attemptedExit)
+            if (_currentModule == null || _attemptedExit)
             {
                 Environment.Exit(-1073741510);
             }
@@ -483,7 +467,7 @@ namespace OrionClient
 
         private static async Task DisplayMenu(Data data)
         {
-            if(_currentModule == null)
+            if (_currentModule == null)
             {
                 _attemptedExit = false;
 
@@ -520,7 +504,7 @@ namespace OrionClient
                 {
                     ExecuteResult executeResult = await _currentModule.ExecuteAsync(data);
 
-                    if(executeResult.Exited)
+                    if (executeResult.Exited)
                     {
                         _currentModule = null;
 
@@ -566,7 +550,7 @@ namespace OrionClient
                     await Task.Delay(500);
 
                     //Changing window size can mess up with the display. Easiest method is to clear the UI and redraw
-                    if(WindowSizeChange())
+                    if (WindowSizeChange())
                     {
                         break;
                     }
@@ -588,13 +572,13 @@ namespace OrionClient
             prompt.Title($"         [lime]Orion Client v{_version}[/]{newVersion}\n\nWallet: {publicKey ?? "N/A"}\n" +
                 $"Hasher: CPU - {cpuHasher?.Name ?? "N/A"} ({(_settings.CPUSetting.CPUThreads > 0 ? _settings.CPUSetting.CPUThreads : Environment.ProcessorCount)} threads), GPU - {gpuHasher?.Name ?? "N/A"}\n" +
                 $"Pool: {pool?.DisplayName ?? "N/A"}" +
-                $"{(_settings.EventWebsocketSetting.Enable ? $"\nEvent Server Status: {GetEventServerStatus()}" : String.Empty) }" +
+                $"{(_settings.EventWebsocketSetting.Enable ? $"\nEvent Server Status: {GetEventServerStatus()}" : String.Empty)}" +
                 $"{(!String.IsNullOrEmpty(_message) ? $"\n\n[red]Error: {_message}[/]" : String.Empty)}");
             _message = String.Empty;
 
             string GetEventServerStatus()
             {
-                if(_eventHandler.Connected)
+                if (_eventHandler.Connected)
                 {
                     return $"[green]Connected[/]";
                 }
@@ -605,12 +589,12 @@ namespace OrionClient
 
             prompt.UseConverter((module) =>
             {
-                if(module is PoolModule && pool != null)
+                if (module is PoolModule && pool != null)
                 {
                     return pool.DisplayName;
                 }
 
-                if(module is SetupModule && data.Settings.NeedsSetup)
+                if (module is SetupModule && data.Settings.NeedsSetup)
                 {
                     return $"[green]{module.Name}[/]";
                 }
@@ -618,11 +602,11 @@ namespace OrionClient
                 return module.Name;
             });
 
-            foreach(IModule module in _modules)
+            foreach (IModule module in _modules)
             {
-                if(module is MinerModule)
+                if (module is MinerModule)
                 {
-                    if(data.Settings.NeedsSetup)
+                    if (data.Settings.NeedsSetup)
                     {
                         continue;
                     }
@@ -633,7 +617,7 @@ namespace OrionClient
                     }
                 }
 
-                if(module is PoolModule)
+                if (module is PoolModule)
                 {
                     if (pool == null)
                     {
@@ -656,7 +640,7 @@ namespace OrionClient
 
         private static bool WindowSizeChange()
         {
-            if(Console.WindowHeight != windowSize.Height || Console.WindowWidth != windowSize.Width)
+            if (Console.WindowHeight != windowSize.Height || Console.WindowWidth != windowSize.Width)
             {
                 windowSize = (Console.WindowWidth, Console.WindowHeight);
                 return true;
@@ -683,7 +667,7 @@ namespace OrionClient
                 return false;
             }
 
-            if(RuntimeInformation.OSArchitecture != Architecture.X64)
+            if (RuntimeInformation.OSArchitecture != Architecture.X64)
             {
                 return false;
             }
@@ -694,7 +678,7 @@ namespace OrionClient
         private class LogInformation
         {
             public string Time { get; set; }
-            public string Level { get; set; } 
+            public string Level { get; set; }
             public string Message { get; set; }
             public string Exception { get; set; }
         }

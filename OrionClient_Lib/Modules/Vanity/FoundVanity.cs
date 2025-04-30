@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace OrionClientLib.Modules.Vanity
+﻿namespace OrionClientLib.Modules.Vanity
 {
     public class VanityTracker
     {
@@ -53,7 +47,7 @@ namespace OrionClientLib.Modules.Vanity
 
         public override bool Equals(object? obj)
         {
-            if(obj is FoundVanity foundVanity)
+            if (obj is FoundVanity foundVanity)
             {
                 return foundVanity.VanityText == VanityText;
             }

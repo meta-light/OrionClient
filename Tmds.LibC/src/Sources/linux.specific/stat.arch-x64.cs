@@ -8,7 +8,7 @@ namespace Tmds.Linux
         public mode_t st_mode;
         public uid_t st_uid;
         public gid_t st_gid;
-        private uint  __pad0;
+        private uint __pad0;
         public dev_t st_rdev;
         public off_t st_size;
         public blksize_t st_blksize;

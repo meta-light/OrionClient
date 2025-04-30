@@ -1,32 +1,19 @@
-﻿using DrillX;
-using DrillX.Solver;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
 using NLog;
 using OrionClientLib.CoinPrograms;
 using OrionClientLib.Hashers.Models;
-using OrionClientLib.Modules.Models;
 using OrionClientLib.Pools.HQPool;
 using OrionClientLib.Pools.Models;
 using Solnet.Wallet;
 using Solnet.Wallet.Utilities;
 using Spectre.Console;
-using System;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.WebSockets;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools
 {
@@ -71,7 +58,7 @@ namespace OrionClientLib.Pools
 
         public override async void DifficultyFound(DifficultyInfo info)
         {
-            if(info.BestDifficulty <= _currentBestDifficulty)
+            if (info.BestDifficulty <= _currentBestDifficulty)
             {
                 return;
             }
@@ -153,7 +140,7 @@ namespace OrionClientLib.Pools
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, ex, $"Failed to parse message from server. Reason: {ex.Message}");
             }
@@ -162,7 +149,7 @@ namespace OrionClientLib.Pools
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(OreHQPoolStake))]
         public override async Task<bool> ConnectAsync(CancellationToken token)
         {
-            if(!await UpdateTimestampAsync(token))
+            if (!await UpdateTimestampAsync(token))
             {
                 return false;
             }
@@ -238,19 +225,19 @@ namespace OrionClientLib.Pools
         {
             await _poolSettings.LoadAsync();
 
-            if(WebsocketUrl == null)
+            if (WebsocketUrl == null)
             {
                 return (false, $"Domain is empty");
             }
 
             (bool success, string errorMessage) balanceRefresh = await RefreshStakeBalancesAsync(true, token);
 
-            if(!balanceRefresh.success)
+            if (!balanceRefresh.success)
             {
                 return (false, !String.IsNullOrEmpty(balanceRefresh.errorMessage) ? $"Failed to pull balance information. Error: {balanceRefresh.errorMessage}" : String.Empty);
             }
 
-            if(token.IsCancellationRequested)
+            if (token.IsCancellationRequested)
             {
                 return (false, String.Empty);
             }
@@ -276,16 +263,16 @@ namespace OrionClientLib.Pools
                 StringBuilder builder = new StringBuilder();
                 builder.AppendLine($"Public key: {_publicKey}");
 
-                if(!String.IsNullOrEmpty(_poolSettings.ClaimWallet))
+                if (!String.IsNullOrEmpty(_poolSettings.ClaimWallet))
                 {
                     builder.AppendLine($"Claim wallet: {_poolSettings.ClaimWallet ?? _publicKey}");
                 }
 
                 builder.AppendLine();
 
-                foreach(Coin c in Enum.GetValues(typeof(Coin)))
+                foreach (Coin c in Enum.GetValues(typeof(Coin)))
                 {
-                    if(!Coins.HasFlag(c))
+                    if (!Coins.HasFlag(c))
                     {
                         continue;
                     }
@@ -355,7 +342,7 @@ namespace OrionClientLib.Pools
                             message = $"[red]{obj.Item1} (Min: {MiniumumRewardPayout[c]})[/]";
                         }
 
-                        if(_wallet == null)
+                        if (_wallet == null)
                         {
                             message = $"[red]{obj.Item1} (Full key required)[/]";
                         }
@@ -364,10 +351,10 @@ namespace OrionClientLib.Pools
                     {
                         if (_minerInformation.TotalStakeRewards.TryGetValue(c, out var b) && b.CurrentBalance < MiniumumRewardPayout[c])
                         {
-                            message =  $"[red]{obj.Item1} (Min: {MiniumumRewardPayout[c]})[/]";
+                            message = $"[red]{obj.Item1} (Min: {MiniumumRewardPayout[c]})[/]";
                         }
 
-                        if(_wallet == null)
+                        if (_wallet == null)
                         {
                             message = $"[red]{obj.Item1} (Full key required)[/]";
                         }
@@ -533,7 +520,7 @@ namespace OrionClientLib.Pools
 
                 double claimAmount = await claimPrompt.ShowAsync(AnsiConsole.Console, token);
 
-                if(claimAmount == 0)
+                if (claimAmount == 0)
                 {
                     return;
                 }
@@ -546,12 +533,12 @@ namespace OrionClientLib.Pools
                     $"{(!isSame ? $"\n[yellow]Warning: Claim wallet {claimWallet} is different from mining wallet {_wallet.Account.PublicKey}. Continue?[/]" : String.Empty)}?");
                 confirmationPrompt.DefaultValue = false;
 
-                if(await confirmationPrompt.ShowAsync(AnsiConsole.Console, token))
+                if (await confirmationPrompt.ShowAsync(AnsiConsole.Console, token))
                 {
                     //Try claim
                     (bool success, string message) claimResult = await ClaimStakeRewards(claimWallet, result.MintPubkey, (ulong)(claimAmount * result.Decimals), token);
 
-                    if(claimResult.success)
+                    if (claimResult.success)
                     {
                         message = $"[green]{claimResult.message}[/]";
                         result.RewardsBalance -= (long)(claimAmount * result.Decimals);
@@ -633,7 +620,7 @@ namespace OrionClientLib.Pools
 
             ConfirmationPrompt confirmationPrompt = new ConfirmationPrompt($"Open browser to view website '{website}'?");
 
-            if(await confirmationPrompt.ShowAsync(AnsiConsole.Console, token))
+            if (await confirmationPrompt.ShowAsync(AnsiConsole.Console, token))
             {
                 Process.Start(new ProcessStartInfo(website) { UseShellExecute = true });
             }
@@ -654,7 +641,7 @@ namespace OrionClientLib.Pools
 
             string data = await response.Content.ReadAsStringAsync();
 
-            if(data == "SUCCESS" || data == "EXISTS")
+            if (data == "SUCCESS" || data == "EXISTS")
             {
                 return true;
             }
@@ -710,11 +697,11 @@ namespace OrionClientLib.Pools
 
                 return (true, String.Empty);
             }
-            catch(TaskCanceledException)
+            catch (TaskCanceledException)
             {
                 return (false, String.Empty);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return (false, ex.Message);
             }
@@ -773,7 +760,7 @@ namespace OrionClientLib.Pools
 
                 return (balanceData, true);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to request {endpoint} data from pool. Reason: {ex.Message}");
 
@@ -787,7 +774,7 @@ namespace OrionClientLib.Pools
 
             var result = await GetDataAsync("balance", token);
 
-            if(!result.success)
+            if (!result.success)
             {
                 return (balances, false);
             }
@@ -832,12 +819,12 @@ namespace OrionClientLib.Pools
                     return JsonConvert.DeserializeObject<List<OreHQPoolStake>>(data);
 
                 }
-                catch(JsonReaderException) //Typically invalid pubkey
+                catch (JsonReaderException) //Typically invalid pubkey
                 {
                     return null;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to grab staking information from pool. Reason: {ex.Message}");
 
@@ -886,14 +873,14 @@ namespace OrionClientLib.Pools
         {
             try
             {
-                if(!await UpdateTimestampAsync(token))
+                if (!await UpdateTimestampAsync(token))
                 {
                     return (false, $"Failed to get timestamp from server");
                 }
 
                 Base58Encoder _encoder = new Base58Encoder();
 
-                byte[] tBytes = new byte[8+32+8];
+                byte[] tBytes = new byte[8 + 32 + 8];
                 BinaryPrimitives.WriteUInt64LittleEndian(tBytes, _timestamp);
                 _encoder.DecodeData(claimWallet).CopyTo(tBytes, 8);
                 BinaryPrimitives.WriteUInt64LittleEndian(tBytes.AsSpan().Slice(40, 8), amount);
@@ -970,7 +957,7 @@ namespace OrionClientLib.Pools
             await RefreshStakeBalancesAsync(false, cts.Token, false);
 
             OnMinerUpdate?.Invoke(this, ([
-                DateTime.Now.ToShortTimeString(), 
+                DateTime.Now.ToShortTimeString(),
                 GenerateChallengeId(submissionResponse.Challenge).ToString(),
                 $"{submissionResponse.MinerSuppliedDifficulty}/{submissionResponse.Difficulty}",
                 $"{submissionResponse.MinerEarnedRewards:0.00000000000}",
@@ -1008,7 +995,7 @@ namespace OrionClientLib.Pools
 
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
 
-            if(updateTime && !await UpdateTimestampAsync(cts.Token))
+            if (updateTime && !await UpdateTimestampAsync(cts.Token))
             {
                 return false;
             }
@@ -1024,7 +1011,7 @@ namespace OrionClientLib.Pools
                 Signature = sigBytes
             });
 
-            if(result)
+            if (result)
             {
                 _logger.Log(LogLevel.Debug, $"Waiting for new challenge [{_serverSentMineTransactions}]");
 
@@ -1054,9 +1041,9 @@ namespace OrionClientLib.Pools
                 B58Signature = RequiresKeypair ? encoder.EncodeData(_wallet.Account.Sign(nonce)) : String.Empty
             });
 
-            if(result)
+            if (result)
             {
-                if(_bestDifficulty == null || info.BestDifficulty > _bestDifficulty.BestDifficulty)
+                if (_bestDifficulty == null || info.BestDifficulty > _bestDifficulty.BestDifficulty)
                 {
                     _bestDifficulty = info;
                 }
@@ -1081,9 +1068,9 @@ namespace OrionClientLib.Pools
 
             public MinerPoolInformation(Coin coin)
             {
-                foreach(Coin c in Enum.GetValues(typeof(Coin)))
+                foreach (Coin c in Enum.GetValues(typeof(Coin)))
                 {
-                    if(coin.HasFlag(c))
+                    if (coin.HasFlag(c))
                     {
                         TotalStakeRewards.TryAdd(c, new BalanceTracker<double>());
                         TotalMiningRewards.TryAdd(c, new BalanceTracker<double>());
@@ -1113,7 +1100,7 @@ namespace OrionClientLib.Pools
             //    }
 
             //    var boostAccounts = _coin.HasFlag(Coin.Ore) ? OreProgram.BoostMints : null;
-                
+
             //    foreach(OreHQPoolStake stake in stakes)
             //    {
             //        if(boostAccounts != null && boostAccounts.TryGetValue(new PublicKey(stake.MintPubkey), out var d))

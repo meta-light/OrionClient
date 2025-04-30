@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DrillX.Compiler
 {
@@ -467,7 +460,7 @@ namespace DrillX.Compiler
 
                 programCounter = nextPc;
 
-                if(programCounter == 512)
+                if (programCounter == 512)
                 {
 
                 }

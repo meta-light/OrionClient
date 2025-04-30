@@ -1,23 +1,14 @@
 ﻿using DrillX.Solver;
-using Equix;
 using NLog;
 using OrionClientLib.Hashers.CPU;
 using OrionClientLib.Hashers.Models;
 using OrionClientLib.Pools;
 using OrionClientLib.Pools.Models;
-using OrionClientLib.Utilities;
-using Spectre.Console;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers
 {
@@ -180,7 +171,7 @@ namespace OrionClientLib.Hashers
 
         public async Task StopAsync()
         {
-            if(!_running)
+            if (!_running)
             {
                 return;
             }
@@ -306,7 +297,7 @@ namespace OrionClientLib.Hashers
                         var rangePartitioner = Partitioner.Create(0, totalNonces, totalNonces / _threads);
 
                         ConcurrentQueue<Exception> exceptions = new ConcurrentQueue<Exception>();
-                        Parallel.ForEach(rangePartitioner, new ParallelOptions { MaxDegreeOfParallelism = _threads }, (range, loop) => 
+                        Parallel.ForEach(rangePartitioner, new ParallelOptions { MaxDegreeOfParallelism = _threads }, (range, loop) =>
                         ExecuteThreadV2(new ExecutionData
                         {
                             Range = range,
@@ -399,7 +390,7 @@ namespace OrionClientLib.Hashers
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, ex, $"Unknown exception occurred in CPUHasher. Reason: {ex.Message}");
             }

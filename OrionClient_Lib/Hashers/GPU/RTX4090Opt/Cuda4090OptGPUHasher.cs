@@ -1,15 +1,9 @@
-﻿using DrillX.Compiler;
+﻿using DrillX;
+using DrillX.Compiler;
 using DrillX.Solver;
-using DrillX;
-using ILGPU.Runtime.Cuda;
-using ILGPU.Runtime;
 using ILGPU;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OrionClientLib.Hashers.GPU.Baseline;
+using ILGPU.Runtime;
+using ILGPU.Runtime.Cuda;
 
 namespace OrionClientLib.Hashers.GPU.RTX4090Opt
 {

@@ -1,6 +1,4 @@
-﻿
-using System.ComponentModel;
-using static DrillX.Compiler.Generator;
+﻿using static DrillX.Compiler.Generator;
 
 namespace DrillX.Compiler
 {
@@ -17,8 +15,8 @@ namespace DrillX.Compiler
 
         internal bool CheckWholeProgram(Scheduler scheduler, Span<Instruction> instructions)
         {
-            return instructions.Length == Model.RequiredInstructions && 
-                    scheduler.OverallLatency().Timestamp == Model.RequiredOverallResultAtCycle && 
+            return instructions.Length == Model.RequiredInstructions &&
+                    scheduler.OverallLatency().Timestamp == Model.RequiredOverallResultAtCycle &&
                     MuliplyCount == Model.RequiredMultiples;
         }
 
@@ -26,7 +24,7 @@ namespace DrillX.Compiler
         {
             var op = instruction.Type;
 
-            if(op == OpCode.Mul || op == OpCode.SMulH || op == OpCode.UMulH)
+            if (op == OpCode.Mul || op == OpCode.SMulH || op == OpCode.UMulH)
             {
                 MuliplyCount++;
             }
@@ -39,7 +37,7 @@ namespace DrillX.Compiler
             }
             else
             {
-                if(regw.Op != RegisterWriterOp.None)
+                if (regw.Op != RegisterWriterOp.None)
                 {
                     throw new Exception("Regw must be none");
                 }
@@ -71,14 +69,14 @@ namespace DrillX.Compiler
 
         internal bool Check(RegisterId dst)
         {
-            if(OpIsAddShift && dst == Model.DisallowRegisterForAddShift)
+            if (OpIsAddShift && dst == Model.DisallowRegisterForAddShift)
             {
                 return false;
             }
 
             if (DisallowEqual.HasValue)
             {
-                if(DisallowEqual.Value == dst)
+                if (DisallowEqual.Value == dst)
                 {
                     return false;
                 }

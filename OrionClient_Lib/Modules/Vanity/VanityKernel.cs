@@ -1,17 +1,11 @@
 ﻿using ILGPU;
-using ILGPU.Backends.PTX;
-using ILGPU.IR.Intrinsics;
-using ILGPU.IR;
-using ILGPU.Runtime;
-using OrionClientLib.Hashers.GPU;
-using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using ILGPU.Backends;
+using ILGPU.Backends.PTX;
+using ILGPU.IR;
+using ILGPU.IR.Intrinsics;
+using OrionClientLib.Hashers.GPU;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 
 namespace OrionClientLib.Modules.Vanity
 {

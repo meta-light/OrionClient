@@ -1,15 +1,10 @@
 ﻿using Newtonsoft.Json;
 using NLog;
 using OrionEventLib.Events;
-using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace OrionEventLib
 {
@@ -36,12 +31,12 @@ namespace OrionEventLib
             _enabled = enabled;
             _serializationType = serialization;
 
-            _connectTimer  = new System.Timers.Timer(TimeSpan.FromMilliseconds(reconnectTime));
+            _connectTimer = new System.Timers.Timer(TimeSpan.FromMilliseconds(reconnectTime));
             _connectTimer.Elapsed += _connectTimer_Elapsed;
             _sendTimer = new System.Timers.Timer(TimeSpan.FromSeconds(1));
             _sendTimer.Elapsed += _sendTimer_Elapsed;
 
-            if(_enabled)
+            if (_enabled)
             {
                 _connectTimer.Start();
                 _sendTimer.Start();
@@ -78,12 +73,12 @@ namespace OrionEventLib
 
         public async Task<bool> Connect(string url, int port, bool firstConnect = true)
         {
-            if(String.IsNullOrEmpty(url))
+            if (String.IsNullOrEmpty(url))
             {
                 return false;
             }
 
-            if(firstConnect)
+            if (firstConnect)
             {
                 _lastUrl = url;
                 _lastPort = port;
@@ -104,21 +99,21 @@ namespace OrionEventLib
 
                 string wsUrl = $"{url}:{port}";
 
-                if(!wsUrl.StartsWith("ws"))
+                if (!wsUrl.StartsWith("ws"))
                 {
                     wsUrl = $"ws://{wsUrl}";
                 }
 
                 await _socket.ConnectAsync(new Uri(wsUrl, UriKind.RelativeOrAbsolute), cts.Token);
 
-                if(!firstConnect)
+                if (!firstConnect)
                 {
                     OnReconnect?.Invoke(this, EventArgs.Empty);
                 }
 
                 _logger.Log(LogLevel.Info, $"Successfully connected to event server");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to connect to event server. Message: {ex.Message}");
             }
@@ -164,7 +159,7 @@ namespace OrionEventLib
 
         private async Task HandleEventSend()
         {
-            while(_socket?.State == WebSocketState.Open && _events.TryDequeue(out var orionEventArray))
+            while (_socket?.State == WebSocketState.Open && _events.TryDequeue(out var orionEventArray))
             {
                 await SendData(orionEventArray);
             }
@@ -177,7 +172,7 @@ namespace OrionEventLib
 
             try
             {
-                if(_socket?.State != WebSocketState.Open)
+                if (_socket?.State != WebSocketState.Open)
                 {
                     return false;
                 }
@@ -186,11 +181,11 @@ namespace OrionEventLib
 
                 return true;
             }
-            catch(WebSocketException ex)
+            catch (WebSocketException ex)
             {
                 close = true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, ex, $"Failed to send data to event server. Message: {ex.Message}");
 
@@ -204,7 +199,7 @@ namespace OrionEventLib
                 }
             }
 
-            if(close)
+            if (close)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to send data to event server. Waiting for reconnect");
 
@@ -215,7 +210,7 @@ namespace OrionEventLib
                         _socket.Dispose();
                         _socket = null;
                     }
-                    catch(Exception eX)
+                    catch (Exception eX)
                     {
                         _logger.Log(LogLevel.Warn, $"Blah. {eX}");
                     }

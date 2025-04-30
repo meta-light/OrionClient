@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 using Windows.Win32;
 using Windows.Win32.System.SystemInformation;
 
@@ -22,7 +17,7 @@ namespace Equix
 
                 SYSTEM_LOGICAL_PROCESSOR_INFORMATION[] pCoreInfo = new SYSTEM_LOGICAL_PROCESSOR_INFORMATION[length / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION)];
 
-                fixed(SYSTEM_LOGICAL_PROCESSOR_INFORMATION* c = pCoreInfo)
+                fixed (SYSTEM_LOGICAL_PROCESSOR_INFORMATION* c = pCoreInfo)
                 {
                     if (PInvoke.GetLogicalProcessorInformation(c, ref length))
                     {

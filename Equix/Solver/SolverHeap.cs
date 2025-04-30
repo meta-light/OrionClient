@@ -1,8 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-public static class SolverHeap
+﻿public static class SolverHeap
 {
     public const int TotalSize = 1897088;
 

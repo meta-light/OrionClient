@@ -1,11 +1,6 @@
 ﻿using OrionClientLib.Pools.Models;
 using Solnet.Programs.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools.HQPool
 {

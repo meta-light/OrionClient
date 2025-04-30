@@ -1,16 +1,9 @@
-﻿using DrillX.Compiler;
-using DrillX;
-using DrillX.Solver;
+﻿using DrillX.Solver;
 using ILGPU;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ILGPU.Backends.PTX;
 using ILGPU.Backends;
-using ILGPU.IR.Intrinsics;
+using ILGPU.Backends.PTX;
 using ILGPU.IR;
+using ILGPU.IR.Intrinsics;
 using System.Runtime.CompilerServices;
 
 namespace OrionClientLib.Hashers.GPU.RTX4090Opt
@@ -302,8 +295,8 @@ namespace OrionClientLib.Hashers.GPU.RTX4090Opt
             const int indiceALength = NumCoarseBuckets; //1KB
             const int indiceBLength = NumCoarseBuckets; //1KB
             const int cacheLength = CacheSize * BlockSize; //~38KB
-           // const int cache2Length = Cache2Size * BlockSize;
-            //var sMemory = SharedMemory.Allocate<byte>(MaxSharedSize);
+                                                           // const int cache2Length = Cache2Size * BlockSize;
+                                                           //var sMemory = SharedMemory.Allocate<byte>(MaxSharedSize);
 
             var scratchIndices = SharedMemory.Allocate<byte>(scratchIndiceLength);// sMemory.SubView(scratchIndiceOffset, scratchIndiceLength).Cast<byte>();// SharedMemory.Allocate<byte>(NumFineBuckets / 2 * BlockSize);
             var indices1 = SharedMemory.Allocate<int>(indiceALength); // sMemory.SubView(indiceAOffset, indiceALength).Cast<int>();// SharedMemory.Allocate<int>(NumCoarseBucket);

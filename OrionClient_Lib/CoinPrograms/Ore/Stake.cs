@@ -1,10 +1,5 @@
 ﻿using Solnet.Programs.Utilities;
 using Solnet.Wallet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.CoinPrograms.Ore
 {
@@ -41,19 +36,19 @@ namespace OrionClientLib.CoinPrograms.Ore
             decimal configRewardsFactor = boostConfig.RewardsFactor.ToDecimal();
             decimal boostRewardFactor = boost.RewardsFactor.ToDecimal();
 
-            if(proofBalance > 0 )
+            if (proofBalance > 0)
             {
                 configRewardsFactor += (decimal)proofBalance / boostConfig.TotalWeight;
             }
 
-            if(configRewardsFactor > boost.LastRewardsFactor.ToDecimal())
+            if (configRewardsFactor > boost.LastRewardsFactor.ToDecimal())
             {
                 var accumulatedRewards = configRewardsFactor - boost.LastRewardsFactor.ToDecimal();
                 var boostRewards = accumulatedRewards * boost.Weight;
                 boostRewardFactor += boostRewards / boost.TotalDeposits;
             }
 
-            if(boostRewardFactor > LastRewardsFactor.ToDecimal())
+            if (boostRewardFactor > LastRewardsFactor.ToDecimal())
             {
                 var accumulatedRewards = boostRewardFactor - LastRewardsFactor.ToDecimal();
                 var personalRewards = accumulatedRewards * Balance;

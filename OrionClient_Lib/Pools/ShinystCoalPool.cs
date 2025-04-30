@@ -2,18 +2,11 @@
 using NLog;
 using OrionClientLib.CoinPrograms;
 using OrionClientLib.Pools.CoalPool;
-using OrionClientLib.Pools.HQPool;
-using Solnet.Wallet;
 using Solnet.Wallet.Utilities;
 using Spectre.Console;
-using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Pools
 {
@@ -47,7 +40,7 @@ namespace OrionClientLib.Pools
             string message = String.Empty;
 
 
-            if(!RequiresKeypair && _wallet == null)
+            if (!RequiresKeypair && _wallet == null)
             {
                 _errorMessage = $"[red]A full keypair is required to initiate a claim. Can claim through the website [cyan]{String.Format(Website, _publicKey)}[/][/]";
 
@@ -62,7 +55,7 @@ namespace OrionClientLib.Pools
             bool enoughCoal = _minerInformation.TotalMiningRewards[Coin.Coal].CurrentBalance >= MiniumumRewardPayout[Coin.Coal];
             bool enoughOre = _minerInformation.TotalMiningRewards[Coin.Ore].CurrentBalance >= MiniumumRewardPayout[Coin.Ore];
 
-            if(!enoughCoal && !enoughOre)
+            if (!enoughCoal && !enoughOre)
             {
                 _errorMessage = $"[red]You must have a minimum of {MiniumumRewardPayout[Coin.Coal]} {Coin.Coal} or {MiniumumRewardPayout[Coin.Ore]} {Coin.Ore} to start a claim[/]";
 
@@ -75,8 +68,8 @@ namespace OrionClientLib.Pools
 
             double coalClaim = totalCoal > 0 ? await GetClaimAmount(Coin.Coal) : 0;
             double oreClaim = totalOre > 0 ? await GetClaimAmount(Coin.Ore) : 0;
-            
-            if(coalClaim < MiniumumRewardPayout[Coin.Coal] && oreClaim < MiniumumRewardPayout[Coin.Ore])
+
+            if (coalClaim < MiniumumRewardPayout[Coin.Coal] && oreClaim < MiniumumRewardPayout[Coin.Ore])
             {
                 _errorMessage = $"[red]You must claim a minimum of {MiniumumRewardPayout[Coin.Coal]} {Coin.Coal} or {MiniumumRewardPayout[Coin.Ore]} {Coin.Ore}[/]";
 
@@ -110,9 +103,9 @@ namespace OrionClientLib.Pools
             {
                 //Try claim
                 (bool success, string message) claimResult = await ClaimMiningRewards(
-                    (ulong)(totalCoal * CoalProgram.CoalDecimals), 
-                    (ulong)(totalOre * OreProgram.OreDecimals), 
-                    (ulong)(totalChromium * CoalProgram.CoalDecimals), 
+                    (ulong)(totalCoal * CoalProgram.CoalDecimals),
+                    (ulong)(totalOre * OreProgram.OreDecimals),
+                    (ulong)(totalChromium * CoalProgram.CoalDecimals),
                     claimWallet, token);
 
                 if (claimResult.success)
@@ -207,9 +200,9 @@ namespace OrionClientLib.Pools
 
                 var coinValues = JsonConvert.DeserializeObject<Dictionary<string, double>>(data);
 
-                foreach(var kvp in coinValues)
+                foreach (var kvp in coinValues)
                 {
-                    if(Enum.TryParse(kvp.Key, ignoreCase: true, out Coin result))
+                    if (Enum.TryParse(kvp.Key, ignoreCase: true, out Coin result))
                     {
                         balanceData.Add((result, kvp.Value));
                     }

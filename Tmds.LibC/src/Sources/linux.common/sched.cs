@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 using static Tmds.Linux.LibraryNames;
 

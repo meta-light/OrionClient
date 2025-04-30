@@ -3,13 +3,15 @@ using static Tmds.Linux.LibraryNames;
 
 namespace Tmds.Linux
 {
-    public struct statx_timestamp {
+    public struct statx_timestamp
+    {
         public long tv_sec;
         public uint tv_nsec;
         private int __reserved;
     }
 
-    public unsafe struct statx {
+    public unsafe struct statx
+    {
         public uint stx_mask;
         public uint stx_blksize;
         public ulong stx_attributes;

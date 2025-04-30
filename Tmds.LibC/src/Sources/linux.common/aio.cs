@@ -23,7 +23,7 @@ namespace Tmds.Linux
         public ulong aio_nbytes;
         public long aio_offset;
         public ulong aio_reserved2;
-        public uint  aio_flags;
+        public uint aio_flags;
         public uint aio_resfd;
     }
 

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Buffers.Binary;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionEventLib
 {
@@ -68,7 +64,7 @@ namespace OrionEventLib
 
         public uint ReadU32()
         {
-           uint v = BinaryPrimitives.ReadUInt32LittleEndian(_data.Slice(_index, 4));
+            uint v = BinaryPrimitives.ReadUInt32LittleEndian(_data.Slice(_index, 4));
 
             _index += 4;
 

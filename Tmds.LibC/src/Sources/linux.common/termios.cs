@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 using static Tmds.Linux.LibraryNames;
-using tcflag_t = System.UInt32;
 using cc_t = System.Byte;
 using speed_t = System.UInt32;
+using tcflag_t = System.UInt32;
 
 namespace Tmds.Linux
 {
@@ -45,35 +45,35 @@ namespace Tmds.Linux
         [DllImport(libc, SetLastError = true)]
         public static extern pid_t tcgetsid(int fd);
 
-        public static byte VINTR    =>  0;
-        public static byte VQUIT    =>  1;
-        public static byte VERASE   =>  2;
-        public static byte VKILL    =>  3;
-        public static byte VEOF     =>  4;
-        public static int VTIME    =>  5;
-        public static int VMIN     =>  6;
-        public static byte VSWTC    =>  7;
-        public static byte VSTART   =>  8;
-        public static byte VSTOP    =>  9;
-        public static byte VSUSP    => 10;
-        public static byte VEOL     => 11;
+        public static byte VINTR => 0;
+        public static byte VQUIT => 1;
+        public static byte VERASE => 2;
+        public static byte VKILL => 3;
+        public static byte VEOF => 4;
+        public static int VTIME => 5;
+        public static int VMIN => 6;
+        public static byte VSWTC => 7;
+        public static byte VSTART => 8;
+        public static byte VSTOP => 9;
+        public static byte VSUSP => 10;
+        public static byte VEOL => 11;
         public static byte VREPRINT => 12;
         public static byte VDISCARD => 13;
-        public static byte VWERASE  => 14;
-        public static byte VLNEXT   => 15;
-        public static byte VEOL2    => 16;
+        public static byte VWERASE => 14;
+        public static byte VLNEXT => 15;
+        public static byte VEOL2 => 16;
 
-        public static uint IGNBRK  => 1;
+        public static uint IGNBRK => 1;
 
         public static uint TCOOFF => 0;
-        public static uint TCOON  => 1;
+        public static uint TCOON => 1;
         public static uint TCIOFF => 2;
-        public static uint TCION  => 3;
+        public static uint TCION => 3;
 
-        public static uint TCIFLUSH  => 0;
-        public static uint TCOFLUSH  => 1;
+        public static uint TCIFLUSH => 0;
+        public static uint TCOFLUSH => 1;
         public static uint TCIOFLUSH => 2;
-        public static uint TCSANOW   => 0;
+        public static uint TCSANOW => 0;
         public static uint TCSADRAIN => 1;
         public static uint TCSAFLUSH => 2;
 

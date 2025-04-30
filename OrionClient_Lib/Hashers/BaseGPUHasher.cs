@@ -1,34 +1,25 @@
-﻿using DrillX.Solver;
+﻿using DrillX;
+using DrillX.Compiler;
+using DrillX.Solver;
 using Equix;
+using ILGPU;
+using ILGPU.Runtime;
+using ILGPU.Runtime.Cuda;
 using NLog;
+using OrionClientLib.Hashers.GPU;
+using OrionClientLib.Hashers.GPU.AMDBaseline;
+using OrionClientLib.Hashers.GPU.Baseline;
+using OrionClientLib.Hashers.GPU.RTX4090Opt;
 using OrionClientLib.Hashers.Models;
-using OrionClientLib.Pools.Models;
 using OrionClientLib.Pools;
-using System;
+using OrionClientLib.Pools.Models;
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using ILGPU;
-using ILGPU.IR;
-using ILGPU.Runtime.Cuda;
-using ILGPU.Runtime;
-using DrillX.Compiler;
-using DrillX;
-using System.Buffers.Binary;
-using Blake2Sharp;
-using OrionClientLib.Hashers.GPU;
-using ILGPU.Runtime.CPU;
-using OrionClientLib.Hashers.GPU.Baseline;
-using System.Diagnostics.CodeAnalysis;
-using Solnet.Rpc.Models;
-using OrionClientLib.Hashers.GPU.RTX4090Opt;
-using OrionClientLib.Hashers.GPU.AMDBaseline;
 
 namespace OrionClientLib.Hashers
 {
@@ -99,7 +90,7 @@ namespace OrionClientLib.Hashers
             //Use total CPU threads for now
             _threads = Environment.ProcessorCount; //TODO: Change to use remaining threads
 
-            if(settings.GPUSetting.ProgramGenerationThreads > 0)
+            if (settings.GPUSetting.ProgramGenerationThreads > 0)
             {
                 _threads = settings.GPUSetting.ProgramGenerationThreads;
             }
@@ -124,9 +115,9 @@ namespace OrionClientLib.Hashers
             List<Device> devicesToUse = new List<Device>();
             HashSet<Device> supportedDevices = new HashSet<Device>(GetDevices(true));
 
-            foreach(var d in settings.GPUDevices)
+            foreach (var d in settings.GPUDevices)
             {
-                if(d >= 0 && d < devices.Count)
+                if (d >= 0 && d < devices.Count)
                 {
                     if (supportedDevices.Contains(devices[d]))
                     {
@@ -145,7 +136,7 @@ namespace OrionClientLib.Hashers
             //TODO: Allow additional buffer room
             int maxNonces = (int)((ulong)devicesToUse.Min(x => x.MemorySize) / GPUDeviceHasher.MemoryPerNonce);
 
-            if(settings.GPUSetting.MaxGPUNoncePerBatch > 0)
+            if (settings.GPUSetting.MaxGPUNoncePerBatch > 0)
             {
                 maxNonces = Math.Min(maxNonces, settings.GPUSetting.MaxGPUNoncePerBatch);
             }
@@ -163,7 +154,7 @@ namespace OrionClientLib.Hashers
 
                 GPUDeviceHasher dHasher = new GPUDeviceHasher(HashxKernel(), EquihashKernel(), device.CreateAccelerator(_context),
                                                               device, i, _setupCPUData, _availableCPUData,
-                                                              GetHashXKernelConfig(device, maxNonces, settings), GetEquihashKernelConfig(device, maxNonces, settings), 
+                                                              GetHashXKernelConfig(device, maxNonces, settings), GetEquihashKernelConfig(device, maxNonces, settings),
                                                               CudaCacheOption());
                 try
                 {
@@ -174,14 +165,14 @@ namespace OrionClientLib.Hashers
 
                     _gpuDevices.Add(dHasher);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.Log(LogLevel.Error, ex, $"Failed to initialize device {device.Name} [{i}]. Reason: {ex.Message}");
                     dHasher?.Dispose();
                 }
             }
 
-            for (int i =0; i < devicesToUse.Count * _maxQueueSize * 2; i++)
+            for (int i = 0; i < devicesToUse.Count * _maxQueueSize * 2; i++)
             {
                 _availableCPUData.Add(new CPUData(maxNonces));
             }
@@ -249,7 +240,7 @@ namespace OrionClientLib.Hashers
 
                     int rangeSize = _totalNonces / _threads;
 
-                    if(rangeSize == 0)
+                    if (rangeSize == 0)
                     {
                         rangeSize++;
                     }
@@ -387,7 +378,7 @@ namespace OrionClientLib.Hashers
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, ex, $"Unknown exception occurred during GPU program generation. Message: {ex.Message}");
             }
@@ -409,13 +400,13 @@ namespace OrionClientLib.Hashers
             }
 
             List<Task> waitTasks = new List<Task>();
-            
+
             //Wait for all devices to stop
             _gpuDevices.ForEach(x => waitTasks.Add(x.WaitForStopAsync()));
             await Task.WhenAll(waitTasks);
 
             //Clean up CPU Data
-            while(_availableCPUData.TryTake(out var item) || _setupCPUData.TryTake(out item))
+            while (_availableCPUData.TryTake(out var item) || _setupCPUData.TryTake(out item))
             {
                 item.Dispose();
             }
@@ -480,7 +471,7 @@ namespace OrionClientLib.Hashers
 
         protected virtual List<Device> GetValidDevices(IEnumerable<Device> devices)
         {
-            if(devices == null)
+            if (devices == null)
             {
                 return new List<Device>();
             }
@@ -506,13 +497,13 @@ namespace OrionClientLib.Hashers
             _gpuDevices.ForEach(x => x.PauseMining());
 
             //Wait for everything to stop
-            while(_gpuDevices.Any(x => x.Executing) || _executing)
+            while (_gpuDevices.Any(x => x.Executing) || _executing)
             {
                 Thread.Sleep(50);
             }
 
             //Move all data over
-            while(_setupCPUData.TryTake(out var item))
+            while (_setupCPUData.TryTake(out var item))
             {
                 _availableCPUData.TryAdd(item);
             }
@@ -622,7 +613,7 @@ namespace OrionClientLib.Hashers
             public GPUDeviceHasher(Action<ArrayView<Instruction>, ArrayView<SipState>, ArrayView<ulong>> hashxKernel,
                          Action<ArrayView<ulong>, ArrayView<EquixSolution>, ArrayView<ushort>, ArrayView<uint>> equihashKernel,
                          Accelerator accelerator, Device device, int deviceId,
-                         BlockingCollection<CPUData> readyCPUData, 
+                         BlockingCollection<CPUData> readyCPUData,
                          BlockingCollection<CPUData> availableCPUData,
                          KernelConfig hashxConfig,
                          KernelConfig equihashConfig,
@@ -673,7 +664,7 @@ namespace OrionClientLib.Hashers
                 _hashxKernel = _accelerator.LoadStreamKernel(_hashxMethod);
                 _equihashKernel = _accelerator.LoadStreamKernel(_equihashMethod);
 
-                if(_hashxKernel.TryGetKernel(out var kernel))
+                if (_hashxKernel.TryGetKernel(out var kernel))
                 {
                     if (kernel is CudaKernel cudaKernel)
                     {
@@ -752,7 +743,7 @@ namespace OrionClientLib.Hashers
                                 _availableCPUData.TryAdd(cpuData);
                             }
 
-                            if(deviceData != null)
+                            if (deviceData != null)
                             {
                                 _copyToData.TryAdd(deviceData);
                             }
@@ -806,7 +797,7 @@ namespace OrionClientLib.Hashers
 
                         if (_hasNotice)
                         {
-                            if(deviceData != null)
+                            if (deviceData != null)
                             {
                                 _copyToData.TryAdd(deviceData);
                             }
@@ -1058,12 +1049,12 @@ namespace OrionClientLib.Hashers
             public void ResetData()
             {
                 //Remove all from collections
-                while(_copyToData.TryTake(out var _) || _executeData.TryTake(out var _) || _copyFromData.TryTake(out var _))
+                while (_copyToData.TryTake(out var _) || _executeData.TryTake(out var _) || _copyFromData.TryTake(out var _))
                 {
 
                 }
 
-                foreach(var deviceData in _deviceData)
+                foreach (var deviceData in _deviceData)
                 {
                     _copyToData.TryAdd(deviceData);
                 }
@@ -1116,7 +1107,7 @@ namespace OrionClientLib.Hashers
                     _solver.Dispose();
                     _accelerator?.Dispose();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.Log(LogLevel.Error, ex, $"Failed to clean up memory for GPU device");
                 }
@@ -1140,10 +1131,10 @@ namespace OrionClientLib.Hashers
                 //These only need a single copy
                 public MemoryBuffer1D<ushort, Stride1D.Dense> Heap { get; private set; }
 
-               // public CPUData CurrentCPUData { get; set; }
+                // public CPUData CurrentCPUData { get; set; }
                 public ulong[] CurrentNonces { get; private set; }
 
-                public GPUDeviceData(MemoryBuffer1D<Instruction, Stride1D.Dense> programInstructions, 
+                public GPUDeviceData(MemoryBuffer1D<Instruction, Stride1D.Dense> programInstructions,
                                      MemoryBuffer1D<SipState, Stride1D.Dense> keys,
                                      MemoryBuffer1D<ushort, Stride1D.Dense> heap,
                                      MemoryBuffer1D<ulong, Stride1D.Dense> hashes,

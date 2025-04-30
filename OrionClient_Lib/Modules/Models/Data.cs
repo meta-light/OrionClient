@@ -1,23 +1,13 @@
-﻿using Blake2Sharp;
-using ILGPU.Runtime.CPU;
-using ILGPU.Runtime.Cuda;
+﻿using ILGPU.Runtime.Cuda;
 using ILGPU.Runtime.OpenCL;
-using OrionClientLib;
 using OrionClientLib.Hashers;
 using OrionClientLib.Hashers.CPU;
 using OrionClientLib.Hashers.GPU.AMDBaseline;
 using OrionClientLib.Hashers.GPU.Baseline;
 using OrionClientLib.Pools;
 using OrionEventLib;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Runtime;
 using System.Runtime.Intrinsics.X86;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules.Models
 {

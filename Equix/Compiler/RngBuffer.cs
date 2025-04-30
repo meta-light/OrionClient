@@ -20,7 +20,7 @@ namespace DrillX.Compiler
 
         internal byte NextByte()
         {
-            if(_index >= 0)
+            if (_index >= 0)
             {
                 var v = _last;
                 --_index;
@@ -39,7 +39,7 @@ namespace DrillX.Compiler
 
         internal uint NextU32()
         {
-            if(_u32Opt.HasValue)
+            if (_u32Opt.HasValue)
             {
                 var v = _u32Opt.Value;
 

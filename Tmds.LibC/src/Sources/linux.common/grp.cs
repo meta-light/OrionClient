@@ -8,7 +8,7 @@ namespace Tmds.Linux
         public byte* gr_name;
         public byte* gr_passwd;
         public gid_t gr_gid;
-        public byte **gr_mem;
+        public byte** gr_mem;
     }
 
     public unsafe static partial class LibC

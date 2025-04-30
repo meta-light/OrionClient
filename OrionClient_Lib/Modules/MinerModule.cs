@@ -1,5 +1,4 @@
-﻿using Blake2Sharp;
-using Equix;
+﻿using Equix;
 using ILGPU.Runtime;
 using NLog;
 using OrionClientLib.Hashers;
@@ -9,14 +8,7 @@ using OrionClientLib.Pools.Models;
 using OrionEventLib.Events.Mining;
 using Solnet.Wallet;
 using Spectre.Console;
-using Spectre.Console.Rendering;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules
 {
@@ -50,7 +42,7 @@ namespace OrionClientLib.Modules
 
             List<Task> tasks = new List<Task>();
 
-            if(cpuHasher != null)
+            if (cpuHasher != null)
             {
                 tasks.Add(cpuHasher.StopAsync());
             }
@@ -87,12 +79,12 @@ namespace OrionClientLib.Modules
             bool setAffinity = cpuEnabled && !gpuEnabled && _currentData.Settings.CPUSetting.AutoSetCPUAffinity;
 
             //TODO: Check for efficiency cores
-            if(OperatingSystem.IsWindows() && setAffinity)
+            if (OperatingSystem.IsWindows() && setAffinity)
             {
                 List<CoreInfo> coreInformation = SystemInformation.GetCoreInformation();
 
                 //Only use physical cores
-                if(_currentData.Settings.CPUSetting.CPUThreads > 0 && coreInformation.Count >= _currentData.Settings.CPUSetting.CPUThreads)
+                if (_currentData.Settings.CPUSetting.CPUThreads > 0 && coreInformation.Count >= _currentData.Settings.CPUSetting.CPUThreads)
                 {
                     nint processorMask = 0;
                     nint fullMask = 0;
@@ -105,7 +97,7 @@ namespace OrionClientLib.Modules
 
                     Process currentProcess = Process.GetCurrentProcess();
 
-                    if(currentProcess.ProcessorAffinity == processorMask)
+                    if (currentProcess.ProcessorAffinity == processorMask)
                     {
                         currentProcess.ProcessorAffinity = fullMask;
                     }
@@ -160,7 +152,7 @@ namespace OrionClientLib.Modules
             pool.ResumeMining += Pool_ResumeMining;
             pool.PauseMining += Pool_PauseMining;
 
-            if(cpuHasher != null)
+            if (cpuHasher != null)
             {
                 cpuHasher.OnHashrateUpdate += Hasher_OnHashrateUpdate;
             }
@@ -225,7 +217,7 @@ namespace OrionClientLib.Modules
 
             _logger.Log(LogLevel.Debug, $"Connecting to pool '{pool.Name}'");
 
-            if(await pool.ConnectAsync(_cts.Token))
+            if (await pool.ConnectAsync(_cts.Token))
             {
                 MiningStartEvent miningStartEvent = new MiningStartEvent
                 {
@@ -335,9 +327,9 @@ namespace OrionClientLib.Modules
             int index = hasher.HardwareType == IHasher.Hardware.CPU ? 0 : e.Index + 1;
 
             _hashrateTable.UpdateCell(index, 2, e.CurrentThreads == -1 ? "-" : e.CurrentThreads.ToString());
-            _hashrateTable.UpdateCell(index, 3, hasher.IsMiningPaused ? "[yellow]Paused[/]" :"[green]Mining[/]");
+            _hashrateTable.UpdateCell(index, 3, hasher.IsMiningPaused ? "[yellow]Paused[/]" : "[green]Mining[/]");
 
-            if(hasher.HardwareType == IHasher.Hardware.GPU && e.ProgramGenerationTooLong)
+            if (hasher.HardwareType == IHasher.Hardware.GPU && e.ProgramGenerationTooLong)
             {
                 _hashrateTable.UpdateCell(index, 4, $"[red]{e.ChallengeSolutionsPerSecond}[/]");
             }
@@ -374,10 +366,10 @@ namespace OrionClientLib.Modules
                 );
             _uiLayout["hashrate"].Ratio = 85;
             _uiLayout["poolInfo"].Ratio = 100;
-            
+
             _hashrateTable = new Table();
             _hashrateTable.Title = new TableTitle($"Pool: {pool.DisplayName}");
-            
+
             _hashrateTable.AddColumn(new TableColumn("Name").Centered());
             _hashrateTable.AddColumn(new TableColumn("Hasher").Centered());
             _hashrateTable.AddColumn(new TableColumn("Threads").Centered());
@@ -413,10 +405,10 @@ namespace OrionClientLib.Modules
             {
                 IGPUHasher gHasher = (IGPUHasher)gpuHasher;
 
-                
+
 
                 //Will need to add a row for each GPU
-                foreach(var device in GetDevicesInUse(gHasher))
+                foreach (var device in GetDevicesInUse(gHasher))
                 {
                     string gpuName = device.Name.Replace("NVIDIA ", "").Replace("GeForce ", "");
 

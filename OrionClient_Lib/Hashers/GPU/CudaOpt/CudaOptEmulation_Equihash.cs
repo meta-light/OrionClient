@@ -1,16 +1,5 @@
-﻿using DrillX.Compiler;
-using DrillX;
-using DrillX.Solver;
+﻿using DrillX.Solver;
 using ILGPU;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ILGPU.Backends.PTX;
-using ILGPU.Backends;
-using ILGPU.IR.Intrinsics;
-using ILGPU.IR;
 using System.Runtime.CompilerServices;
 
 namespace OrionClientLib.Hashers.GPU.Baseline

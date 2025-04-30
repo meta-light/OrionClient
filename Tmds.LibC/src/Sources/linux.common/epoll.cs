@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static Tmds.Linux.LibraryNames;
 
@@ -48,8 +47,8 @@ namespace Tmds.Linux
         [DllImport(libc, SetLastError = true)]
         public static extern int epoll_ctl(int epfd, int op, int fd, epoll_event* ev);
         [DllImport(libc, SetLastError = true)]
-        public static extern  int epoll_wait(int epfd, epoll_event* events, int maxevents, int timeout);
+        public static extern int epoll_wait(int epfd, epoll_event* events, int maxevents, int timeout);
         [DllImport(libc, SetLastError = true)]
-        public static extern  int epoll_pwait(int epfd, epoll_event * events, int maxevents, int timeout, sigset_t * sigmask);
+        public static extern int epoll_pwait(int epfd, epoll_event* events, int maxevents, int timeout, sigset_t* sigmask);
     }
 }

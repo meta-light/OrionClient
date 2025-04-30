@@ -1,17 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.Win32;
-using Tmds.Linux;
-using System.Runtime.CompilerServices;
-using System.Security;
-using System.ComponentModel;
-using Windows.Win32.System.Memory;
+﻿using Equix.Compiler;
 using System.Diagnostics;
-using Equix.Compiler;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace DrillX.Compiler
 {
@@ -47,7 +38,7 @@ namespace DrillX.Compiler
 
         public readonly static byte[] x86Prologue_Linux = new byte[]
         {
-			0x48, 0x89, 0xF9,             /* mov rcx, rdi */
+            0x48, 0x89, 0xF9,             /* mov rcx, rdi */
 			0x48, 0x83, 0xEC, 0x20,       /* sub rsp, 32 */
 			0x4C, 0x89, 0x24, 0x24,       /* mov qword ptr [rsp+0], r12 */
 			0x4C, 0x89, 0x6C, 0x24, 0x08, /* mov qword ptr [rsp+8], r13 */
@@ -109,7 +100,7 @@ namespace DrillX.Compiler
 };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static byte* EmitByte(byte* p, byte x) { *p = x; return ++p; }
+        private static byte* EmitByte(byte* p, byte x) { *p = x; return ++p; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte* EmitU16(byte* p, ushort x) { *(ushort*)p = x; p += 2; return p; }
@@ -131,79 +122,79 @@ namespace DrillX.Compiler
 #if !IGNORE_SECURITY_RISK
             // Leaving memory writable+executable is considered a security risk
             // Unfortunately, this appears to lead to performance loss on high core count CPUs
-			// You can switch this behavior by uncommenting the lines in the Equix.csproj file
+            // You can switch this behavior by uncommenting the lines in the Equix.csproj file
             //VirtualMemory.HashxVmRw(code, new nuint(CodeSize));
 #endif
-			Span<byte> pos = new Span<byte>(code, (int)CodeSize);
-			byte* target = null;
+            Span<byte> pos = new Span<byte>(code, (int)CodeSize);
+            byte* target = null;
 
-			if(OperatingSystem.IsWindows())
+            if (OperatingSystem.IsWindows())
             {
                 x86Prologue_Windows.AsSpan().CopyTo(pos);
                 code += x86Prologue_Windows.Length;
             }
-			else if(OperatingSystem.IsLinux())
+            else if (OperatingSystem.IsLinux())
             {
                 x86Prologue_Linux.AsSpan().CopyTo(pos);
                 code += x86Prologue_Linux.Length;
             }
 
-			Debug.Assert(instructions.Length == 512);
+            Debug.Assert(instructions.Length == 512);
 
-			for (int i = 0; i < instructions.Length; i++)
-			{
-				var instruction = instructions[i];
+            for (int i = 0; i < instructions.Length; i++)
+            {
+                var instruction = instructions[i];
 
-				switch (instruction.Type)
-				{
-					case OpCode.UMulH:
-						code = EmitU64(code, 0x8b4ce0f749c08b49 | (((ulong)instruction.Src) << 40) | (((ulong)instruction.Dst) << 16));
-						code = EmitByte(code, (byte)(0xc2 + 8 * instruction.Dst));
-						break;
-					case OpCode.SMulH:
-						code = EmitU64(code, 0x8b4ce8f749c08b49 | (((ulong)instruction.Src) << 40) | (((ulong)instruction.Dst) << 16));
-						code = EmitByte(code, (byte)(0xc2 + 8 * instruction.Dst));
-						break;
-					case OpCode.Mul:
-						code = EmitU32(code, (uint)(0xc0af0f4d | ((ulong)instruction.Dst << 27) | ((ulong)instruction.Src << 24)));
-						break;
-					case OpCode.Sub:
-						code = EmitU16(code, 0x2b4d);
-						code = EmitByte(code, (byte)(0xc0 | ((ulong)instruction.Dst << 3) | (ulong)(uint)instruction.Src));
-						break;
-					case OpCode.Xor:
-						code = EmitU16(code, 0x334d);
-						code = EmitByte(code, (byte)(0xc0 | ((ulong)instruction.Dst << 3) | (ulong)(uint)instruction.Src));
-						break;
-					case OpCode.AddShift:
-						code = EmitU32(code, (uint)(0x00048d4f | (((uint)instruction.Dst << 19) |
-						   (GenSIB((uint)instruction.Operand, (uint)instruction.Src, (uint)instruction.Dst) << 24))));
-						break;
-					case OpCode.Rotate:
-						code = EmitU32(code, (uint)(0x00c8c149 | ((uint)instruction.Dst << 16) | ((uint)instruction.Operand << 24)));
-						break;
-					case OpCode.AddConst:
-						code = EmitU16(code, 0x8149);
-						code = EmitByte(code, (byte)(0xc0 | instruction.Dst));
-						code = EmitU32(code, (uint)instruction.Operand);
+                switch (instruction.Type)
+                {
+                    case OpCode.UMulH:
+                        code = EmitU64(code, 0x8b4ce0f749c08b49 | (((ulong)instruction.Src) << 40) | (((ulong)instruction.Dst) << 16));
+                        code = EmitByte(code, (byte)(0xc2 + 8 * instruction.Dst));
+                        break;
+                    case OpCode.SMulH:
+                        code = EmitU64(code, 0x8b4ce8f749c08b49 | (((ulong)instruction.Src) << 40) | (((ulong)instruction.Dst) << 16));
+                        code = EmitByte(code, (byte)(0xc2 + 8 * instruction.Dst));
+                        break;
+                    case OpCode.Mul:
+                        code = EmitU32(code, (uint)(0xc0af0f4d | ((ulong)instruction.Dst << 27) | ((ulong)instruction.Src << 24)));
+                        break;
+                    case OpCode.Sub:
+                        code = EmitU16(code, 0x2b4d);
+                        code = EmitByte(code, (byte)(0xc0 | ((ulong)instruction.Dst << 3) | (ulong)(uint)instruction.Src));
+                        break;
+                    case OpCode.Xor:
+                        code = EmitU16(code, 0x334d);
+                        code = EmitByte(code, (byte)(0xc0 | ((ulong)instruction.Dst << 3) | (ulong)(uint)instruction.Src));
+                        break;
+                    case OpCode.AddShift:
+                        code = EmitU32(code, (uint)(0x00048d4f | (((uint)instruction.Dst << 19) |
+                           (GenSIB((uint)instruction.Operand, (uint)instruction.Src, (uint)instruction.Dst) << 24))));
+                        break;
+                    case OpCode.Rotate:
+                        code = EmitU32(code, (uint)(0x00c8c149 | ((uint)instruction.Dst << 16) | ((uint)instruction.Operand << 24)));
+                        break;
+                    case OpCode.AddConst:
+                        code = EmitU16(code, 0x8149);
+                        code = EmitByte(code, (byte)(0xc0 | instruction.Dst));
+                        code = EmitU32(code, (uint)instruction.Operand);
 
-						break;
-					case OpCode.XorConst:
-						code = EmitU16(code, 0x8149);
-						code = EmitByte(code, (byte)(0xf0 | instruction.Dst));
-						code = EmitU32(code, (uint)instruction.Operand);
-						break;
-					case OpCode.Target:
-						target = code;
-						code = EmitU32(code, 0x440fff85);
-						code = EmitByte(code, 0xf7);
-						break;
-					case OpCode.Branch:
-						code = EmitU64(code, ((ulong)instruction.Operand) << 32 | 0xc2f7f209);
-						code = EmitU16(code, (ushort)(((target - code) << 8) | 0x74));
-						break;
-				}
-			}
+                        break;
+                    case OpCode.XorConst:
+                        code = EmitU16(code, 0x8149);
+                        code = EmitByte(code, (byte)(0xf0 | instruction.Dst));
+                        code = EmitU32(code, (uint)instruction.Operand);
+                        break;
+                    case OpCode.Target:
+                        target = code;
+                        code = EmitU32(code, 0x440fff85);
+                        code = EmitByte(code, 0xf7);
+                        break;
+                    case OpCode.Branch:
+                        code = EmitU64(code, ((ulong)instruction.Operand) << 32 | 0xc2f7f209);
+                        code = EmitU16(code, (ushort)(((target - code) << 8) | 0x74));
+                        break;
+                }
+            }
 
 
             if (OperatingSystem.IsWindows())
@@ -220,7 +211,7 @@ namespace DrillX.Compiler
 #if !IGNORE_SECURITY_RISK
             //VirtualMemory.HashxVmRx(codeStart, CodeSize);
 #endif
-			return (delegate* unmanaged[Cdecl]<ulong*, void>)codeStart;
+            return (delegate* unmanaged[Cdecl]<ulong*, void>)codeStart;
         }
     }
 }

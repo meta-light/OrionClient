@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DrillX.Compiler
+﻿namespace DrillX.Compiler
 {
     internal class Generator
     {
@@ -55,7 +47,7 @@ namespace DrillX.Compiler
             while (true)
             {
                 var result = InstructionGenAttempt(Pass.Original, out bool success);
-                
+
                 if (success)
                 {
                     return result;

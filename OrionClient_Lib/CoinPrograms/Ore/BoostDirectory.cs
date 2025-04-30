@@ -1,10 +1,5 @@
 ﻿using Solnet.Programs.Utilities;
 using Solnet.Wallet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.CoinPrograms.Ore
 {
@@ -20,10 +15,11 @@ namespace OrionClientLib.CoinPrograms.Ore
                 Boosts = new PublicKey[256],
             };
 
-            for(int i =0; i < directory.Boosts.Length; i++)
+            for (int i = 0; i < directory.Boosts.Length; i++)
             {
                 directory.Boosts[i] = data.GetPubKey(8 + i * 32);
-            };
+            }
+            ;
 
             directory.ActiveBoosts = data.GetU64(directory.Boosts.Length * 32 + 8);
 

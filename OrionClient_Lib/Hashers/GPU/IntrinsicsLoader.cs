@@ -1,14 +1,9 @@
-﻿using ILGPU.Backends.PTX;
-using ILGPU.IR.Intrinsics;
-using ILGPU;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using ILGPU.IR;
+﻿using ILGPU;
 using ILGPU.Backends.OpenCL;
+using ILGPU.Backends.PTX;
+using ILGPU.IR;
+using ILGPU.IR.Intrinsics;
+using System.Reflection;
 
 namespace OrionClientLib.Hashers.GPU
 {

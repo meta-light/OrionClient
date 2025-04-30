@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace OrionEventLib.Events.Mining
 {
@@ -53,7 +49,7 @@ namespace OrionEventLib.Events.Mining
 
             CPUEnabled = eventDeserializer.ReadBool();
             CPUThreads = eventDeserializer.ReadS32();
-            
+
             int totalDevices = eventDeserializer.ReadU16();
 
             for (int i = 0; i < totalDevices; i++)
@@ -81,7 +77,7 @@ namespace OrionEventLib.Events.Mining
             builder.AppendLine($"CPU Enabled: {CPUEnabled}. Threads: {CPUThreads}");
             builder.AppendLine($"GPU Devices: {Devices.Count}");
 
-            foreach(var device in Devices)
+            foreach (var device in Devices)
             {
                 builder.AppendLine($"\tDevice {device.Id}: {device.Name}");
             }

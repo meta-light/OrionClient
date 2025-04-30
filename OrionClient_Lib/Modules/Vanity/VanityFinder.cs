@@ -1,14 +1,8 @@
 ﻿
 using NLog;
-using Solnet.Wallet;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace OrionClientLib.Modules.Vanity
 {
@@ -52,7 +46,7 @@ namespace OrionClientLib.Modules.Vanity
             {
                 await SaveVanities();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.Log(LogLevel.Warn, $"Failed to save {_foundVanities.Count} found vanities. Reason: {ex.Message}");
             }
@@ -64,7 +58,7 @@ namespace OrionClientLib.Modules.Vanity
 
         public void Find(byte[] privateKey, byte[] publicKey, byte[] vanityKey, int batchSize, int threads)
         {
-            if(threads <= 0)
+            if (threads <= 0)
             {
                 threads = Environment.ProcessorCount;
             }
@@ -112,7 +106,7 @@ namespace OrionClientLib.Modules.Vanity
                                 break;
                             }
 
-                            if(!String.IsNullOrEmpty(currentNode.Vanity))
+                            if (!String.IsNullOrEmpty(currentNode.Vanity))
                             {
                                 potentialVanity = currentNode.Vanity;
                             }
@@ -170,7 +164,7 @@ namespace OrionClientLib.Modules.Vanity
 
             Directory.CreateDirectory(walletDirectory);
 
-            if(File.Exists(outputFile))
+            if (File.Exists(outputFile))
             {
                 string[] lines = await File.ReadAllLinesAsync(outputFile);
 
@@ -180,7 +174,7 @@ namespace OrionClientLib.Modules.Vanity
                 {
                     string[] parts = line.Split(":", StringSplitOptions.RemoveEmptyEntries);
 
-                    if(parts.Length != 4)
+                    if (parts.Length != 4)
                     {
                         continue;
                     }
@@ -200,7 +194,7 @@ namespace OrionClientLib.Modules.Vanity
                 using var _ = File.Create(outputFile);
             }
 
-            if(File.Exists(inputFile))
+            if (File.Exists(inputFile))
             {
                 string[] lines = await File.ReadAllLinesAsync(inputFile);
 
@@ -210,7 +204,7 @@ namespace OrionClientLib.Modules.Vanity
                 {
                     string vanity = line;
 
-                    if(String.IsNullOrEmpty(vanity))
+                    if (String.IsNullOrEmpty(vanity))
                     {
                         ++InvalidFormat;
 
@@ -219,9 +213,9 @@ namespace OrionClientLib.Modules.Vanity
 
                     bool isValid = true;
 
-                    foreach(char c in vanity)
+                    foreach (char c in vanity)
                     {
-                        if(!validChars.Contains(c))
+                        if (!validChars.Contains(c))
                         {
                             ++InvalidCharacters;
                             isValid = false;
@@ -229,26 +223,26 @@ namespace OrionClientLib.Modules.Vanity
                         }
                     }
 
-                    if(vanity.Length < minimumCharacterLength)
+                    if (vanity.Length < minimumCharacterLength)
                     {
                         continue;
                     }
 
                     //Add
-                    if(isValid)
+                    if (isValid)
                     {
                         char character = vanity[0];
 
                         Node node = _vanityTree.GetNode(_b58ToLoc[character - 49], true, character);
 
-                        for(int i = 1; i < vanity.Length; i++)
+                        for (int i = 1; i < vanity.Length; i++)
                         {
                             character = vanity[i];
 
                             node = node.GetNode(_b58ToLoc[character - 49], true, character);
                         }
 
-                        if(String.IsNullOrEmpty(node.Vanity))
+                        if (String.IsNullOrEmpty(node.Vanity))
                         {
                             node.Vanity = vanity;
 
@@ -271,12 +265,12 @@ namespace OrionClientLib.Modules.Vanity
         {
             List<FoundVanity> toSave = new List<FoundVanity>(_foundVanities.Count);
 
-            while(_foundVanities.TryDequeue(out var result))
+            while (_foundVanities.TryDequeue(out var result))
             {
                 toSave.Add(result);
             }
 
-            if(toSave.Count == 0)
+            if (toSave.Count == 0)
             {
                 return;
             }
@@ -309,7 +303,7 @@ namespace OrionClientLib.Modules.Vanity
             {
                 Node node = Nodes[c];
 
-                if(node == null && add)
+                if (node == null && add)
                 {
                     node = new Node(character);
                     Nodes[c] = node;
