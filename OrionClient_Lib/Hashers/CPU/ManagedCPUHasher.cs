@@ -18,8 +18,8 @@ namespace OrionClientLib.Hashers.CPU
 {
     public class ManagedCPUHasher : BaseCPUHasher
     {
-        public override string Name => "Stock";
-        public override string Description => "C# stock implementation of DrillX algorithm";
+        public override string Name => "Stock [[C#]]";
+        public override string Description => "Stock implementation of DrillX algorithm";
 
         protected override void ExecuteThread(Tuple<int, int> range, ParallelLoopState loopState, ConcurrentQueue<Exception> exceptions)
         {

@@ -37,9 +37,9 @@ namespace OrionClientLib.Modules
         public SetupModule()
         {
             _steps.Add(WalletSetupAsync);
+            _steps.Add(ChoosePoolAsync);
             _steps.Add(ChooseCPUHasherAsync);
             _steps.Add(ChooseGPUHasherAsync);
-            _steps.Add(ChoosePoolAsync);
             _steps.Add(FinalConfirmationAsync);
         }
 
@@ -151,7 +151,9 @@ namespace OrionClientLib.Modules
                     chosenText = "[b][[Current]][/] ";
                 }
 
-                return $"{chosenText}{hasher.Name} - {hasher.Description} {(hasher.Experimental ? "[red][[Experimental]][/]" : String.Empty)}";
+                bool isBest = _data.GetBestCPUHasher() == hasher;
+
+                return $"{chosenText}{hasher.Name} - {hasher.Description} {(hasher.Experimental ? "[red][[Experimental]][/]" : String.Empty)} {(isBest ? "[green][[Recommended]][/]" : String.Empty)}";
             });
 
             selectionPrompt.AddChoices(_data.Hashers.Where(x => x.HardwareType == IHasher.Hardware.CPU && (_settings.GPUSetting.EnableExperimentalHashers || !x.Experimental)).OrderByDescending(x =>x == cpuHasher));

@@ -21,7 +21,7 @@ namespace OrionClientLib.Hashers.CPU
     public unsafe class NativeCPUHasherAVX2 : BaseCPUHasher
     {
         public override string Name => "Partial AVX2 [[C]]";
-        public override string Description => "C drillx implementation with minor AVX2 opts to hashx";
+        public override string Description => "Drillx implementation with minor AVX2 opts to hashx";
 
         protected override void ExecuteThread(Tuple<int, int> range, ParallelLoopState loopState, ConcurrentQueue<Exception> exceptions)
         {
