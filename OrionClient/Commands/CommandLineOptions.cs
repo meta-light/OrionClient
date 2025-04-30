@@ -38,14 +38,17 @@ namespace OrionClient.Commands
         [Option('t', "cpu-threads", HelpText = "Total threads to use for mining (0 = all threads)")]
         public int? CPUThreads { get; set; }
 
+        [Option('a', "cpu-auto", HelpText = "Auto selects best CPU hasher for device")]
+        public bool AutoSelectCPU { get; set; }
+
         #endregion
 
         #region GPU Settings
 
         [Option("gpu-batch-size", HelpText = "Higher values use more ram and take longer to run. Lower values can cause lower hashrates")]
         public int? BatchSize { get; set; }
-        [Option("gpu-block-size", HelpText = "GPU block size")]
-        public int? BlockSize { get; set; }
+        //[Option("gpu-block-size", HelpText = "GPU block size")]
+        //public int? BlockSize { get; set; }
         [Option("gpu-gen-threads", HelpText = "CPU threads to use to generation program for GPU (0 = all threads)")]
         public int? ProgramGenerationThreads { get; set; }
 

@@ -1,5 +1,6 @@
 ﻿using OrionClientLib;
 using OrionClientLib.Hashers;
+using OrionClientLib.Hashers.CPU;
 using OrionClientLib.Pools;
 using OrionEventLib;
 using System;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -49,5 +51,25 @@ namespace OrionClientLib.Modules.Models
                 );
         }
 
+        public IHasher GetBestCPUHasher()
+        {
+            IHasher bestHasher = null;
+
+            if(Avx512DQ.IsSupported)
+            {
+                bestHasher = Hashers.FirstOrDefault(x => x is AVX512CPUHasher);
+            }
+            else if (Avx2.IsSupported)
+            {
+                bestHasher = Hashers.FirstOrDefault(x => x is PartialCPUHasherAVX2);
+            }
+
+            if(bestHasher == null)
+            {
+                bestHasher = Hashers.FirstOrDefault(x => x is ManagedCPUHasher);
+            }
+
+            return bestHasher ?? Hashers.FirstOrDefault(x => x is DisabledCPUHasher);
+        }
     }
 }

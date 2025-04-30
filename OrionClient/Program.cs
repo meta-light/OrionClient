@@ -365,6 +365,13 @@ namespace OrionClient
                 _settings.CPUSetting.CPUHasher = "Disabled";
             }
 
+            if(cmdOptions.AutoSelectCPU)
+            {
+                Data temp = new Data(_hashers, _pools, null, null, false);
+
+                _settings.CPUSetting.CPUHasher = temp.GetBestCPUHasher().Name;
+            }
+
             #endregion
 
             #region GPU
@@ -404,21 +411,21 @@ namespace OrionClient
                 _settings.GPUSetting.MaxGPUNoncePerBatch = batchSize;
             }
 
-            if (cmdOptions.BlockSize.HasValue)
-            {
-                int blockSize = cmdOptions.BlockSize.Value;
+            //if (cmdOptions.BlockSize.HasValue)
+            //{
+            //    int blockSize = cmdOptions.BlockSize.Value;
 
-                int[] validValues = new int[] { 512, 256, 128, 64, 32, 16 };
+            //    int[] validValues = new int[] { 512, 256, 128, 64, 32, 16 };
 
-                if (!validValues.Contains(blockSize))
-                {
-                    AnsiConsole.MarkupLine($"[red]Error: [green]--gpu-block-size[/] value '[cyan]{cmdOptions.BlockSize}[/]' is invalid. Valid ({String.Join(", ", validValues)})[/]");
+            //    if (!validValues.Contains(blockSize))
+            //    {
+            //        AnsiConsole.MarkupLine($"[red]Error: [green]--gpu-block-size[/] value '[cyan]{cmdOptions.BlockSize}[/]' is invalid. Valid ({String.Join(", ", validValues)})[/]");
 
-                    return false;
-                }
+            //        return false;
+            //    }
 
-                _settings.GPUSetting.GPUBlockSize = blockSize;
-            }
+            //    _settings.GPUSetting.GPUBlockSize = blockSize;
+            //}
 
             if (cmdOptions.ProgramGenerationThreads.HasValue)
             {
