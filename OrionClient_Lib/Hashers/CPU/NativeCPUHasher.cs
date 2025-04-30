@@ -22,6 +22,7 @@ namespace OrionClientLib.Hashers.CPU
     {
         public override string Name => "Native Stock";
         public override string Description => "Runs native C drillx implementation";
+        public override bool DisplaySetting => false;
 
         protected override void ExecuteThread(Tuple<int, int> range, ParallelLoopState loopState, ConcurrentQueue<Exception> exceptions)
         {

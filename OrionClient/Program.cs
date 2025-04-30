@@ -54,7 +54,7 @@ namespace OrionClient
         private static Table _logTable;
 
         private static string _message = String.Empty;
-        private static string _version = "1.5.1.0";
+        private static string _version = "1.6.0.0";
         private static GithubApi.Data _updateData;
         private static string _cudaLocation = String.Empty;
         private static OrionEventHandler _eventHandler;
@@ -133,7 +133,7 @@ namespace OrionClient
             _pools = new List<IPool>
             {
                 new Ec1ipseOrePool(),
-                new ShinystCoalPool(),
+                //new ShinystCoalPool(),
                 new CustomOreHQPool()
             };
 
@@ -151,11 +151,11 @@ namespace OrionClient
 
             _hashers = new List<IHasher>();
             AddSupportedHasher(new ManagedCPUHasher());
-            AddSupportedHasher(new HybridCPUHasher());
-            AddSupportedHasher(new HybridCPUHasherAVX2());
+            //AddSupportedHasher(new HybridCPUHasher());
+            AddSupportedHasher(new PartialCPUHasherAVX2());
             //AddSupportedHasher(new HybridCPUHasherAVX512());
             AddSupportedHasher(new AVX512CPUHasher());
-            AddSupportedHasher(new NativeCPUHasher());
+            //AddSupportedHasher(new NativeCPUHasher());
             AddSupportedHasher(new NativeCPUHasherAVX2());
             AddSupportedHasher(new CudaBaselineGPUHasher());
             AddSupportedHasher(new CudaOptEmulationGPUHasher());

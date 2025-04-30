@@ -18,10 +18,10 @@ using System.Threading.Tasks;
 
 namespace OrionClientLib.Hashers.CPU
 {
-    public unsafe class HybridCPUHasherAVX2 : BaseCPUHasher
+    public unsafe class PartialCPUHasherAVX2 : BaseCPUHasher
     {
-        public override string Name => "Hybrid AVX2";
-        public override string Description => "C#/C Drillx implementation with minor AVX2 optimizations";
+        public override string Name => "Partial AVX2 [[C#]]";
+        public override string Description => "C# Drillx implementation with minor AVX2 optimizations";
 
         protected override void ExecuteThread(Tuple<int, int> range, ParallelLoopState loopState, ConcurrentQueue<Exception> exceptions)
         {

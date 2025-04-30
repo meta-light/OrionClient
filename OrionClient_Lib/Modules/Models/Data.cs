@@ -44,8 +44,8 @@ namespace OrionClientLib.Modules.Models
         public (IHasher? cpu, IHasher? gpu) GetChosenHasher()
         {
             return (
-                Hashers.FirstOrDefault(x => x.Name == Settings.CPUSetting.CPUHasher && x.HardwareType == IHasher.Hardware.CPU), 
-                Hashers.FirstOrDefault(x => x.Name == Settings.GPUSetting.GPUHasher && x.HardwareType == IHasher.Hardware.GPU)
+                Hashers.FirstOrDefault(x => x.Name == Settings.CPUSetting.CPUHasher && x.HardwareType == IHasher.Hardware.CPU) ?? Hashers.FirstOrDefault(x => x is DisabledCPUHasher), 
+                Hashers.FirstOrDefault(x => x.Name == Settings.GPUSetting.GPUHasher && x.HardwareType == IHasher.Hardware.GPU) ?? Hashers.FirstOrDefault(x => x is DisabledGPUHasher)
                 );
         }
 

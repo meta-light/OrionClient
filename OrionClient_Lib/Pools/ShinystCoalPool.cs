@@ -24,7 +24,7 @@ namespace OrionClientLib.Pools
         public override event EventHandler<(string[] columns, byte[] data)> OnMinerUpdate;
         public override string Name { get; } = "Excalivator Pool";
         public override string DisplayName => Name;
-        public override bool DisplaySetting => true;
+        public override bool DisplaySetting => false;
         public override string Description => $"[Cyan]{Coin.Coal}[/]/[green]{Coin.Ore}[/] pool using Ore-HQ implementation. Operator (discord): Shinyst";
         public override string ArgName => "excalivator";
 

@@ -21,6 +21,7 @@ namespace OrionClientLib.Hashers.CPU
     {
         public override string Name => "Hybrid";
         public override string Description => "C#/C Drillx implementation";
+        public override bool DisplaySetting => false;
 
         protected override void ExecuteThread(Tuple<int, int> range, ParallelLoopState loopState, ConcurrentQueue<Exception> exceptions)
         {
