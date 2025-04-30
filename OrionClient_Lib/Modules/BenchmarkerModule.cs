@@ -1,6 +1,7 @@
 ﻿using Equix;
 using NLog;
 using OrionClientLib.Hashers;
+using OrionClientLib.Hashers.GPU.AMDBaseline;
 using OrionClientLib.Hashers.Models;
 using OrionClientLib.Modules.Models;
 using Spectre.Console;
@@ -98,6 +99,9 @@ namespace OrionClientLib.Modules
 
             if (_stop)
             {
+                //Potential of updating settings to get benchmark to run. Reset
+                await data.Settings.ReloadAsync();
+
                 await currentHasher.StopAsync();
                 ResetAffinity();
                 currentHasher.OnHashrateUpdate -= CurrentHasher_OnHashrateUpdate;
@@ -140,6 +144,19 @@ namespace OrionClientLib.Modules
 
                 _logger.Log(LogLevel.Debug, $"Running hasher: {currentHasher.Name} for {_totalSeconds}s");
 
+                if(data.Settings.GPUDevices == null || data.Settings.GPUDevices.Count == 0)
+                {
+                    (IHasher hasher, List<int> devices) = data.GetGPUSettingInfo(currentHasher is OpenCLOptEmulationGPUHasher);
+
+                    if(hasher != null)
+                    {
+                        _logger.Log(LogLevel.Debug, $"GPU settings not set. Will use recommended setting for hasher");
+
+                        data.Settings.GPUSetting.GPUHasher = hasher.Name;
+                        data.Settings.GPUDevices = devices;
+                    }
+                }
+
                 currentHasher.OnHashrateUpdate += CurrentHasher_OnHashrateUpdate;
 
                 var result = await currentHasher.InitializeAsync(null, data.Settings);
@@ -168,6 +185,9 @@ namespace OrionClientLib.Modules
             //Allow each hasher to run for 30 seconds in total
             if (currentHasher.CurrentChallengeTime.TotalSeconds > _totalSeconds && currentHasher.Initialized)
             {
+                //Potential of updating settings to get benchmark to run. Reset
+                await data.Settings.ReloadAsync();
+
                 await currentHasher.StopAsync();
                 ResetAffinity();
 
