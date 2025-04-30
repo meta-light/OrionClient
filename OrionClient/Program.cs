@@ -379,48 +379,11 @@ namespace OrionClient
 
                     var allDevices = gpuHasher.GetDevices(false);
 
-                    bool has4090 = false;
+                    _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is CudaOptEmulationGPUHasher)?.Name ?? "Disabled";
 
-                    //Will assume we're using cuda
-                    if (!cmdOptions.OpenCL && allDevices.Any(x => x is CudaDevice))
+                    if (cmdOptions.OpenCL)
                     {
-                        for (int i = 0; i < allDevices.Count; i++)
-                        {
-                            if (allDevices[i] is CudaDevice cudaDevice)
-                            {
-                                _settings.GPUDevices.Add(i);
-
-                                if (cudaDevice.Name.Contains("RTX 4090"))
-                                {
-                                    has4090 = true;
-                                }
-                            }
-                        }
-
-                        if (_settings.GPUSetting.GPUHasher == "Disabled" || !_hashers.Any(x => x.Name == _settings.GPUSetting.GPUHasher))
-                        {
-                            _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is CudaBaselineGPUHasher)?.Name ?? "Disabled";
-
-                            if (has4090)
-                            {
-                                _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is Cuda4090OptGPUHasher)?.Name ?? _settings.GPUSetting.GPUHasher;
-                            }
-                        }
-                    }
-                    else if (cmdOptions.OpenCL || allDevices.Any(x => x is CLDevice))
-                    {
-                        for (int i = 0; i < allDevices.Count; i++)
-                        {
-                            if (allDevices[i] is CLDevice cudaDevice)
-                            {
-                                _settings.GPUDevices.Add(i);
-                            }
-                        }
-
-                        if (_settings.GPUSetting.GPUHasher == "Disabled" || !_hashers.Any(x => x.Name == _settings.GPUSetting.GPUHasher))
-                        {
-                            _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is OpenCLOptEmulationGPUHasher)?.Name ?? "Disabled";
-                        }
+                        _settings.GPUSetting.GPUHasher = _hashers.FirstOrDefault(x => x is OpenCLOptEmulationGPUHasher)?.Name ?? "Disabled";
                     }
                 }
             }
