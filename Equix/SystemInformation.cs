@@ -155,6 +155,22 @@ namespace Equix
 
             return "CPU";
         }
+
+        public static void PreventSleep()
+        {
+            if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+            {
+                PInvoke.SetThreadExecutionState( Windows.Win32.System.Power.EXECUTION_STATE.ES_CONTINUOUS | Windows.Win32.System.Power.EXECUTION_STATE.ES_SYSTEM_REQUIRED);
+            }
+        }
+
+        public static void AllowSleep()
+        {
+            if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+            {
+                PInvoke.SetThreadExecutionState(Windows.Win32.System.Power.EXECUTION_STATE.ES_CONTINUOUS);
+            }
+        }
     }
 
     public class CoreInfo

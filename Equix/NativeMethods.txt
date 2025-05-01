@@ -4,3 +4,5 @@ VirtualFree
 VirtualAlloc
 GetLastError
 GetLogicalProcessorInformation
+SetThreadExecutionState
+GetThreadExecutionState

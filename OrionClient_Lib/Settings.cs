@@ -17,6 +17,9 @@ namespace OrionClientLib
         [TypeValidator<BasePool>()]
         public string Pool { get; set; }
 
+        [SettingDetails("Prevent Sleeping", "Prevent computer from going to sleep when mining (Windows only)")]
+        public bool PreventSleeping { get; set; } = true;
+
         public List<int> GPUDevices { get; set; } = new List<int>();
 
         [JsonIgnore]

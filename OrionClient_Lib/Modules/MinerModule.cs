@@ -37,6 +37,11 @@ namespace OrionClientLib.Modules
         {
             _logger.Log(LogLevel.Debug, $"Exiting out of miner module...");
 
+            if (_currentData.Settings.PreventSleeping)
+            {
+                SystemInformation.AllowSleep();
+            }
+
             IPool pool = _currentData.GetChosenPool();
             (IHasher cpuHasher, IHasher gpuHasher) = _currentData.GetChosenHasher();
 
@@ -189,6 +194,11 @@ namespace OrionClientLib.Modules
                         currentProcess.ProcessorAffinity = processorMask;
                     }
                 }
+            }
+
+            if (data.Settings.PreventSleeping)
+            {
+                SystemInformation.PreventSleep();
             }
 
             if (cpuEnabled)
