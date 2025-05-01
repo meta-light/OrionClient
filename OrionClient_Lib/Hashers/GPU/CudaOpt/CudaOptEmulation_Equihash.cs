@@ -88,44 +88,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             int totalNum1 = SortPass2(idx, stageBValues, sharedCounts, fullCount, sharedValues, sharedIndices, tempStage, values, totalNum);
             SortPass3(idx, values, sharedCounts, fullCount, sharedValues, tempStage, stage1Indices, totalNum1, solutions.Cast<EquixSolution>().SubView(block * 8, 8), solutionCount.SubView(block, 1));
 
-            //if(Group.IsFirstThread && block == 1)
-            //{
-            //    for(int i =0; i < 16; i++)
-            //    {
-            //        var v = solutions.Cast<EquixSolution>()[i];
-
-            //        Interop.WriteLine("[{1}] {0}", (uint)v.V0, i);
-            //    }
-            //}
-            //if (idx == 0)
-            //{
-            //    Interop.WriteLine("{0} {1} {2}", totalNum, totalNum1, totalNum2);
-            //}
-            //for (int i = 0; i < 8; i++)
-            //{
-            //    solutions[i] = (ushort)tempCounts[i];
-            //}
-
-        }
-
-        private static void PrintHex(ulong value)
-        {
-            // Print “0x” prefix
-            Interop.Write("0x");
-            // For each hex digit
-            for (int i = 15; i >= 0; --i)
-            {
-                // Extract nibble 
-                int nibble = (int)((value >> (i * 4)) & 0xF);
-                // Compute ASCII code in a 32‑bit register:
-                // '0'..'9' = 0x30–0x39, 'A'..'F' = 0x41–0x46
-                int ascii = nibble < 10
-                            ? ('0' + nibble)
-                            : ('A' + (nibble - 10));
-                // Print the character via 32‑bit write
-                Interop.Write("{0}", ascii);
-            }
-            Interop.WriteLine("");
         }
 
         #region Pass 1
@@ -364,35 +326,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             Group.Barrier();
 
             int totalValues = Math.Min(TotalValues, globalMemoryIndex[0]);
-
-            //for (int i = idx; i < totalValues; i += BlockSize)
-            //{
-            //    var v = stageBValues[i];
-            //    var index = stage1Indices[i];
-
-            //    var valueA = values[(int)(index & 0xFFFF)] & mask60bit;
-            //    var valueB = values[(int)(index >> 16)] & mask60bit;
-
-            //    var combined = valueA + valueB;
-
-            //    if (v != (combined >> 15))
-            //    {
-            //        Interop.WriteLine("[{2}] {0} != {1}. Indices: {3} {4}", v, combined, i, index & 0xFFFF, index >> 16);
-            //    }
-
-            //    if ((combined & 0x7FFF) != 0 || v == 0)
-            //    {
-            //        Interop.WriteLine("[{0}] Bad", i);
-            //    }
-            //}
-
-            //if (idx == 0)
-            //{
-            //    if (totalValues <= 60000)
-            //    {
-            //        Interop.WriteLine("{0}", totalValues);
-            //    }
-            //}
 
             return totalValues;
         }
@@ -656,35 +589,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             Group.Barrier();
 
             int totalValues = Math.Min(TotalValues, globalMemoryIndex[0]);
-
-            //for (int i = idx; i < totalValues; i += BlockSize)
-            //{
-            //    var v = stageBValues[i];
-            //    var index = stage1Indices[i];
-
-            //    var valueA = values[(int)(index & 0xFFFF)] & mask60bit;
-            //    var valueB = values[(int)(index >> 16)] & mask60bit;
-
-            //    var combined = valueA + valueB;
-
-            //    if (v != (combined >> 15))
-            //    {
-            //        Interop.WriteLine("[{2}] {0} != {1}. Indices: {3} {4}", v, combined, i, index & 0xFFFF, index >> 16);
-            //    }
-
-            //    if ((combined & 0x7FFF) != 0 || v == 0)
-            //    {
-            //        Interop.WriteLine("[{0}] Bad", i);
-            //    }
-            //}
-
-            //if (idx == 0)
-            //{
-            //    if (totalValues <= 60000)
-            //    {
-            //        Interop.WriteLine("{0}", totalValues);
-            //    }
-            //}
 
             return totalValues;
         }
@@ -959,8 +863,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
                                     V6 = (ushort)index6,
                                     V7 = (ushort)index7
                                 };
-
-                                //Interop.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", index0, index1, index2, index3, index4, index5, index6, index7);
                             }
                         }
                     }
@@ -974,35 +876,6 @@ namespace OrionClientLib.Hashers.GPU.Baseline
             Group.Barrier();
 
             int totalValues = Math.Min(TotalValues, globalMemoryIndex[0]);
-
-            //for (int i = idx; i < totalValues; i += BlockSize)
-            //{
-            //    var v = stageBValues[i];
-            //    var index = stage1Indices[i];
-
-            //    var valueA = values[(int)(index & 0xFFFF)] & mask60bit;
-            //    var valueB = values[(int)(index >> 16)] & mask60bit;
-
-            //    var combined = valueA + valueB;
-
-            //    if (v != (combined >> 15))
-            //    {
-            //        Interop.WriteLine("[{2}] {0} != {1}. Indices: {3} {4}", v, combined, i, index & 0xFFFF, index >> 16);
-            //    }
-
-            //    if ((combined & 0x7FFF) != 0 || v == 0)
-            //    {
-            //        Interop.WriteLine("[{0}] Bad", i);
-            //    }
-            //}
-
-            //if (idx == 0)
-            //{
-            //    if (totalValues <= 60000)
-            //    {
-            //        Interop.WriteLine("{0}", totalValues);
-            //    }
-            //}
 
             return totalValues;
         }
