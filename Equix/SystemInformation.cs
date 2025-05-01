@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using Microsoft.Win32;
+using System.Text.RegularExpressions;
 using Windows.Win32;
 using Windows.Win32.System.SystemInformation;
 
@@ -117,6 +118,42 @@ namespace Equix
             }
 
             return (coreInfo);
+        }
+
+        public static string GetProcessorName()
+        {
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    using (var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0"))
+                    {
+                        if (key != null)
+                        {
+                            var cpuName = key.GetValue("ProcessorNameString")?.ToString();
+                            return cpuName.Replace("Processor", "") ?? "CPU";
+                        }
+                    }
+
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    var cpuInfo = File.ReadAllLines("/proc/cpuinfo");
+                    foreach (var line in cpuInfo)
+                    {
+                        if (line.StartsWith("model name"))
+                        {
+                            return line.Split(':')[1].Replace("Processor", "").Trim();
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                return "CPU";
+            }
+
+            return "CPU";
         }
     }
 

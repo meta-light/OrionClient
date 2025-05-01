@@ -109,8 +109,8 @@ namespace OrionClient
 
             NativeLibrary.SetDllImportResolver(Assembly.GetAssembly(typeof(CudaAccelerator)), DllImportResolver);
 
-            ConsoleTraceListener listener = new ConsoleTraceListener();
-            Trace.Listeners.Add(listener);
+            //ConsoleTraceListener listener = new ConsoleTraceListener();
+            //Trace.Listeners.Add(listener);
 
             #region Configure
 

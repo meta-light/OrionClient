@@ -397,7 +397,7 @@ namespace OrionClientLib.Modules
             _uiLayout["poolInfo"].Update(_poolInfoTable);
 
             //Add CPU
-            _hashrateTable.AddRow("CPU", cpuHasher?.Name, "-", "-", "-", "-", "-", "-");
+            _hashrateTable.AddRow(SystemInformation.GetProcessorName(), cpuHasher?.Name, "-", "-", "-", "-", "-", "-");
 
 
             //Add GPUs
