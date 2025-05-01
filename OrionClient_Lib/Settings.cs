@@ -27,6 +27,7 @@ namespace OrionClientLib
 
         //public bool EnableDebugging { get; set; }
         public bool MigratedSettings { get; set; } = false;
+        public bool UsedAdvancedSettings { get; set; }
 
         [JsonIgnore]
         public bool NeedsSetup => String.IsNullOrEmpty(CPUSetting.CPUHasher) || String.IsNullOrEmpty(GPUSetting.GPUHasher) || String.IsNullOrEmpty(Pool) || (String.IsNullOrEmpty(PublicKey) && String.IsNullOrEmpty(KeyFile));

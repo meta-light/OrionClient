@@ -91,8 +91,18 @@ namespace OrionClientLib.Modules
             const string keypair = "Modify Keypair";
             const string exit = "Exit";
 
-            selectionPrompt.AddChoice(recommended);
-            selectionPrompt.AddChoice(advanced);
+            //Flip first choice based on previous settings
+            if (!_settings.UsedAdvancedSettings)
+            {
+                selectionPrompt.AddChoice(recommended);
+                selectionPrompt.AddChoice(advanced);
+            }
+            else
+            {
+                selectionPrompt.AddChoice(advanced);
+                selectionPrompt.AddChoice(recommended);
+            }
+
             selectionPrompt.AddChoice(keypair);
             selectionPrompt.AddChoice(exit);
 
@@ -571,6 +581,7 @@ namespace OrionClientLib.Modules
             switch (result)
             {
                 case 0:
+                    _settings.UsedAdvancedSettings = !_isSimpleSetup;
                     await _settings.SaveAsync();
                     return _currentStep + 1;
                 case 1:
