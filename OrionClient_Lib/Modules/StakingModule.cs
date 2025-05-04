@@ -933,7 +933,7 @@ namespace OrionClientLib.Modules
             {
                 _stakingTable = new Table();
                 _stakingTable.Title($"Staking Information [[Ore: ${oreBoost.OreUSDValue:0.00}]]");
-                _stakingTable.AddColumns("LP", "Weight", "Stakers", "Total Stake", "Relative Yield", "User Stake", "Share", "Rewards");
+                _stakingTable.AddColumns("LP", "Weight", "Stakers", "Total Stake", "Relative Yield", "User Stake", "Share", "Est. Daily Yield", "Rewards");
                 _stakingTable.ShowRowSeparators = true;
                 foreach (var column in _stakingTable.Columns)
                 {
@@ -955,6 +955,7 @@ namespace OrionClientLib.Modules
                                         $"{relativeProfit / oreBoost.Multiplier:0.00}x",
                                         $"{stakeInfo.UserStake:0.###} (${stakeInfo.UserStakeUSDValue:n2})",
                                         $"{stakeInfo.SharePercent:0.####}%",
+                                        $"{stakeInfo.DailyYield:n11} (${stakeInfo.DailyYieldUSD:n2})",
                                         WrapBooleanColor($"{stakeInfo.Rewards:n11} (${stakeInfo.RewardUSDValue:n2})", stakeInfo.Rewards > 0, Color.Green, null)
                                         );
                 }
@@ -978,7 +979,8 @@ namespace OrionClientLib.Modules
                     _stakingTable.UpdateCell(i, 4, $"{relativeProfit / oreBoost.Multiplier:0.00}");
                     _stakingTable.UpdateCell(i, 5, $"{stakeInfo.UserStake:0.###} (${stakeInfo.UserStakeUSDValue:n2})");
                     _stakingTable.UpdateCell(i, 6, $"{stakeInfo.SharePercent:0.####}%");
-                    _stakingTable.UpdateCell(i, 7, WrapBooleanColor($"{stakeInfo.Rewards:n11} (${stakeInfo.RewardUSDValue:n2})", stakeInfo.Rewards > 0, Color.Green, null));
+                    _stakingTable.UpdateCell(i, 7, $"{stakeInfo.DailyYield:n11} (${stakeInfo.DailyYieldUSD:n2})");
+                    _stakingTable.UpdateCell(i, 8, WrapBooleanColor($"{stakeInfo.Rewards:n11} (${stakeInfo.RewardUSDValue:n2})", stakeInfo.Rewards > 0, Color.Green, null));
                 }
             }
 

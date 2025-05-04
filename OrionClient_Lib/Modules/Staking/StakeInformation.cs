@@ -6,6 +6,8 @@ namespace OrionClientLib.Modules.Staking
 {
     public class StakeInformation
     {
+        const int ExpectedDailyEmissions = 1440 / 2;
+
         public BoostInformation Boost { get; private set; }
         public Boost BoostInfo { get; set; }
         public PublicKey StakeAccount { get; private set; }
@@ -40,6 +42,10 @@ namespace OrionClientLib.Modules.Staking
         public double SharePercent => UserStake == 0 ? 0 : UserStake / TotalBoostStake * 100;
 
         public decimal RewardUSDValue => OreUSDValue * (decimal)Rewards;
+
+
+        public decimal DailyYield => ((decimal)Multiplier / 100 * ExpectedDailyEmissions) * (decimal)SharePercent / 100;
+        public decimal DailyYieldUSD => DailyYield * OreUSDValue;
 
         public StakeInformation(BoostInformation boost, PublicKey authority)
         {
