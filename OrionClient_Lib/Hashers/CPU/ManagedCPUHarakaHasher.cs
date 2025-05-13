@@ -107,13 +107,13 @@ namespace OrionClientLib.Hashers.CPU
 
         public override bool IsSupported()
         {
-            if (RuntimeInformation.OSArchitecture == Architecture.Arm)
+            //if (RuntimeInformation.OSArchitecture == Architecture.Arm)
+            //{
+            //    return System.Runtime.Intrinsics.Arm.Aes.IsSupported;
+            //}
+
             {
-                return System.Runtime.Intrinsics.Arm.Aes.IsSupported;
-            }
-            else
-            {
-                return System.Runtime.Intrinsics.X86.Aes.IsSupported;
+                return System.Runtime.Intrinsics.X86.Aes.IsSupported && Avx2.IsSupported;
             }
         }
     }
