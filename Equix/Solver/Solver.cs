@@ -653,6 +653,25 @@ namespace DrillX.Solver
             return sols;
         }
 
+        public unsafe int Solve_Opt_Haraka(Haraka.HarakaSiphash key, ulong* values, byte* heap, EquixSolution* solutions, ulong* rk)
+        {
+            Radix* rs = (Radix*)heap;
+
+            ulong* stageA = values;
+            ulong* stageB = rs->Stage1;
+
+            for (int i = 0; i < 65536; i ++)
+            {
+                values[i] = Haraka.HashInput((ulong)(i), rk, key);
+            }
+
+            int stage1Count = SortPass1(stageA, rs->Counts, rs->TempCounts, stageB, rs->Stage1Indices, Radix.Total);
+            int stage2Count = SortPass2(stageB, rs->Counts, rs->TempCounts, stageA, stage1Count);
+            int sols = SortPass3(stageA, rs->Counts, rs->TempCounts, stageB, rs->Stage1Indices, solutions, stage2Count);
+
+            return sols;
+        }
+
         public unsafe int Solve_Opt_Com_Haraka(Haraka.HarakaSiphash key, ulong* values, byte* heap, EquixSolution* solutions, ulong* rk)
         {
             Radix* rs = (Radix*)heap;

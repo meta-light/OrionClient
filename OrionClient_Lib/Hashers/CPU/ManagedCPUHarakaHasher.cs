@@ -64,7 +64,7 @@ namespace OrionClientLib.Hashers.CPU
 
                         Haraka.HarakaSiphash harakaKey = Haraka.BuildKey(fullChallenge, sipKey);
 
-                        int solutionCount = solver.Solve_Opt_Com_Haraka(harakaKey, (ulong*)solver.ComputeSolutions, (byte*)solver.Heap, solutions, rk);
+                        int solutionCount = solver.Solve_Opt_Haraka(harakaKey, (ulong*)solver.ComputeSolutions, (byte*)solver.Heap, solutions, rk);
 
                         //Calculate difficulty
                         for (int z = 0; z < solutionCount; z++)

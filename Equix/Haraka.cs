@@ -23,7 +23,7 @@ namespace Equix
             return output[0];
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static ulong HashInput(ulong input, ulong* roundConstants, HarakaSiphash sipKey)
         {
             //Siphash24ctr
