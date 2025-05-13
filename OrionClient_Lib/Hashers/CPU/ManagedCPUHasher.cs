@@ -11,6 +11,7 @@ namespace OrionClientLib.Hashers.CPU
     {
         public override string Name => "Stock [[C#]]";
         public override string Description => "Stock implementation of DrillX algorithm";
+        public override bool DisplaySetting => false;
 
         protected override void ExecuteThread(Tuple<int, int> range, ParallelLoopState loopState, ConcurrentQueue<Exception> exceptions)
         {
