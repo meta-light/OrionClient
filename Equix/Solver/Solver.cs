@@ -1,4 +1,5 @@
 ﻿using DrillX.Compiler;
+using Equix;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -652,6 +653,20 @@ namespace DrillX.Solver
             return sols;
         }
 
+        public unsafe int Solve_Opt_Com_Haraka(Haraka.HarakaSiphash key, ulong* values, byte* heap, EquixSolution* solutions, ulong* rk)
+        {
+            Radix* rs = (Radix*)heap;
+
+            ulong* stageA = values;
+            ulong* stageB = rs->Stage1;
+
+            int stage1Count = SortPass1_Com_Haraka(key, stageA, rs->Counts, rs->TempCounts, stageB, rs->Stage1Indices, Radix.Total, rk);
+            int stage2Count = SortPass2(stageB, rs->Counts, rs->TempCounts, stageA, stage1Count);
+            int sols = SortPass3(stageA, rs->Counts, rs->TempCounts, stageB, rs->Stage1Indices, solutions, stage2Count);
+
+            return sols;
+        }
+
         public unsafe int Solve_Opt(ulong* values, byte* heap, EquixSolution* solutions)
         {
             Radix* rs = (Radix*)heap;
@@ -817,6 +832,168 @@ namespace DrillX.Solver
             return currentIndex;
 
         }
+
+
+        private unsafe int SortPass1_Com_Haraka(Haraka.HarakaSiphash key, ulong* values, byte* counts, ushort* tempCounts, ulong* tempStage, uint* stage1Indices, int totalNum, ulong* rk)
+        {
+            Span<ushort> cc = new Span<ushort>(counts, Radix.Total / 2);
+            cc.Fill(0);
+
+            for (int i = 0; i < Radix.Total; i += 4)
+            {
+                var a = Haraka.HashInput((ulong)(i + 0), rk, key);
+                var b = Haraka.HashInput((ulong)(i + 1), rk, key);
+                var c = Haraka.HashInput((ulong)(i + 2), rk, key);
+                var d = Haraka.HashInput((ulong)(i + 3), rk, key);
+
+                values[i] = a;
+                values[i + 1] = b;
+                values[i + 2] = c;
+                values[i + 3] = d;
+
+                ushort bucket0 = (ushort)(a & 0x7FFF);
+                ushort bucket1 = (ushort)(b & 0x7FFF);
+                ushort bucket2 = (ushort)(c & 0x7FFF);
+                ushort bucket3 = (ushort)(d & 0x7FFF);
+
+                ushort loc0 = Math.Min((byte)7, counts[bucket0]);
+                tempCounts[bucket0 * 8 + loc0] = (ushort)(i + 0);
+                counts[bucket0] = (byte)(loc0 + 1);
+
+                ushort loc1 = Math.Min((byte)7, counts[bucket1]);
+                tempCounts[bucket1 * 8 + loc1] = (ushort)(i + 1);
+                counts[bucket1] = (byte)(loc1 + 1);
+
+                ushort loc2 = Math.Min((byte)7, counts[bucket2]);
+                tempCounts[bucket2 * 8 + loc2] = (ushort)(i + 2);
+                counts[bucket2] = (byte)(loc2 + 1);
+
+                ushort loc3 = Math.Min((byte)7, counts[bucket3]);
+                tempCounts[bucket3 * 8 + loc3] = (ushort)(i + 3);
+                counts[bucket3] = (byte)(loc3 + 1);
+            }
+
+            var currentIndex = 0;
+
+            for (int bucketIdx = 0; bucketIdx < Radix.Total / 4; bucketIdx++)
+            {
+
+                int inverse = -bucketIdx & 0x7FFF;
+                var bucketACount = counts[bucketIdx];
+
+                if (bucketACount == 0)
+                {
+                    continue;
+                }
+
+                var bucketBCount = counts[inverse];
+
+                if (bucketBCount == 0)
+                {
+                    continue;
+                }
+
+                var bucketAIndex = bucketIdx;
+                var bucketBIndex = inverse;
+
+                if (bucketACount > bucketBCount)
+                {
+                    //Inverse buckets
+                    var temp = bucketBIndex;
+                    bucketBIndex = bucketAIndex;
+                    bucketAIndex = temp;
+
+                    temp = bucketACount;
+                    bucketACount = bucketBCount;
+                    bucketBCount = (byte)temp;
+                }
+
+                {
+                    var index = Math.Min((byte)8, bucketBCount);
+
+                    var b = Sse2.LoadAlignedVector128((byte*)(tempCounts + bucketBIndex * 8)).AsUInt16();
+                    var bucketBIndices = Avx2.ConvertToVector256Int32(b);
+                    var x = Avx2.ShiftLeftLogical(bucketBIndices, 16).AsUInt32();
+                    var bucketBValuesLower = Avx2.GatherVector256(values, bucketBIndices.GetLower(), 8);
+                    var bucketBValuesUpper = Vector256<ulong>.Zero;
+
+                    if (bucketBCount > 4)
+                    {
+                        bucketBValuesUpper = Avx2.GatherVector256(values, bucketBIndices.GetUpper(), 8);
+                    }
+
+                    for (int i = 0; i < bucketACount; i++)
+                    {
+                        var bucketAIndice = tempCounts[bucketAIndex * 8 + i];
+
+                        var bucketAValues = Vector256.Create((values[bucketAIndice]));
+                        var currentBucketAIndice = Vector256.Create((int)bucketAIndice);
+
+                        var fullIndices = Avx2.Xor(currentBucketAIndice.AsUInt32(), x);
+
+                        var lowSumValues = Avx2.Add(bucketAValues, bucketBValuesLower);
+                        var highSumValues = Avx2.Add(bucketAValues, bucketBValuesUpper);
+
+                        Avx2.Store(tempStage + currentIndex, lowSumValues);
+                        Avx2.Store(stage1Indices + currentIndex, fullIndices);
+
+                        if (bucketBCount > 4)
+                        {
+                            Avx2.Store(tempStage + currentIndex + 4, highSumValues);
+                        }
+
+                        currentIndex += index;
+
+                        if (currentIndex >= Radix.Total)
+                        {
+#if DEBUG
+                            goto end;
+
+#else
+                            return Radix.Total;
+#endif
+                        }
+                    }
+                }
+            }
+
+        end:
+
+#if DEBUG
+            var stage1Isndices = new Span<uint>(stage1Indices, currentIndex);
+            int totalBad = 0;
+
+            HashSet<(uint, uint)> pairs = new HashSet<(uint, uint)>();
+
+            for (int i = 0; i < stage1Isndices.Length; i++)
+            {
+                var vv = stage1Isndices[i];
+
+                var a = vv & 0xFFFF;
+                var b = vv >> 16;
+
+                var valueA = values[a];
+                var valueB = values[b];
+
+                if (((valueA + valueB) & 0x7FFF) != 0)
+                {
+                    Console.WriteLine(++totalBad);
+
+                    continue;
+                }
+
+                if (!pairs.Add((a, b)))
+                {
+
+                }
+            }
+
+#endif
+
+            return currentIndex;
+
+        }
+
 
         //[MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private unsafe int SortPass1(ulong* values, byte* counts, ushort* tempCounts, ulong* tempStage, uint* stage1Indices, int totalNum)

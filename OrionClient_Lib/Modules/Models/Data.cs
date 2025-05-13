@@ -51,19 +51,19 @@ namespace OrionClientLib.Modules.Models
         {
             IHasher bestHasher = null;
 
-            if (Avx512DQ.IsSupported)
-            {
-                bestHasher = Hashers.FirstOrDefault(x => x is AVX512CPUHasher);
-            }
-            else if (Avx2.IsSupported)
-            {
-                bestHasher = Hashers.FirstOrDefault(x => x is PartialCPUHasherAVX2);
-            }
+            //if (Avx512DQ.IsSupported)
+            //{
+            //    bestHasher = Hashers.FirstOrDefault(x => x is AVX512CPUHasher);
+            //}
+            //else if (Avx2.IsSupported)
+            //{
+            //    bestHasher = Hashers.FirstOrDefault(x => x is PartialCPUHasherAVX2);
+            //}
 
-            if (bestHasher == null)
-            {
-                bestHasher = Hashers.FirstOrDefault(x => x is ManagedCPUHasher);
-            }
+            //if (bestHasher == null)
+            //{
+            //    bestHasher = Hashers.FirstOrDefault(x => x is ManagedCPUHasher);
+            //}
 
             return bestHasher ?? Hashers.FirstOrDefault(x => x is DisabledCPUHasher);
         }

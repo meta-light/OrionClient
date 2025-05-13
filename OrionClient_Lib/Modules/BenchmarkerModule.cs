@@ -164,7 +164,7 @@ namespace OrionClientLib.Modules
                 if (result.success)
                 {
                     byte[] challenge = new byte[32];
-                    challenge.AsSpan().Fill(0xFF);
+                    challenge.AsSpan().Fill(0x00);
                     //RandomNumberGenerator.Fill(challenge);
 
                     currentHasher.NewChallenge(0, challenge, 0, ulong.MaxValue);
