@@ -222,6 +222,9 @@ namespace OrionClientLib.Pools
                 // Get on-chain data for debugging
                 await LogOnChainDataAsync();
 
+                // Analyze successful Bitz transactions to understand challenge format
+                await AnalyzeSuccessfulBitzTransactionAsync();
+
                 // Also check the mystery accounts from the real Bitz transaction
                 Console.WriteLine("=== MYSTERY ACCOUNTS FROM REAL BITZ TX ===");
                 
@@ -586,7 +589,32 @@ namespace OrionClientLib.Pools
                 var firstBytes = configBytes.Take(Math.Min(64, configBytes.Length)).ToArray();
                 _logger.Log(LogLevel.Debug, $"First 64 bytes of config: {Convert.ToHexString(firstBytes)}");
 
-                // Extract real challenge from config bytes - try different offsets
+                // Try multiple challenge formats to find the right one
+                _logger.Log(LogLevel.Debug, "=== TESTING DIFFERENT CHALLENGE FORMATS ===");
+                
+                // Test 1: 32 bytes at offset 0
+                var challenge0 = new byte[32];
+                Array.Copy(configBytes, 0, challenge0, 0, 32);
+                _logger.Log(LogLevel.Debug, $"Challenge format 1 (offset 0, 32 bytes): {Convert.ToHexString(challenge0)}");
+                
+                // Test 2: 32 bytes at offset 8  
+                var challenge8 = new byte[32];
+                Array.Copy(configBytes, 8, challenge8, 0, 32);
+                _logger.Log(LogLevel.Debug, $"Challenge format 2 (offset 8, 32 bytes): {Convert.ToHexString(challenge8)}");
+                
+                // Test 3: First 16 bytes only (some mining protocols use shorter challenges)
+                var challenge16 = new byte[16];
+                Array.Copy(configBytes, 0, challenge16, 0, 16);
+                _logger.Log(LogLevel.Debug, $"Challenge format 3 (offset 0, 16 bytes): {Convert.ToHexString(challenge16)}");
+                
+                // Test 4: Middle 16 bytes
+                var challengeMid16 = new byte[16];
+                Array.Copy(configBytes, 8, challengeMid16, 0, 16);
+                _logger.Log(LogLevel.Debug, $"Challenge format 4 (offset 8, 16 bytes): {Convert.ToHexString(challengeMid16)}");
+                
+                _logger.Log(LogLevel.Debug, "=== END CHALLENGE FORMAT TESTING ===");
+
+                // For now, use offset 8 approach, but we may need to try others
                 var realChallenge = new byte[32];
                 
                 // The config data is 40 bytes total. Let's try different offsets:
@@ -600,7 +628,7 @@ namespace OrionClientLib.Pools
                     {
                         realChallenge[i] = configBytes[i + 8]; // Challenge at offset 8
                     }
-                    _logger.Log(LogLevel.Debug, $"Trying challenge at offset 8: {Convert.ToHexString(realChallenge)}");
+                    _logger.Log(LogLevel.Debug, $"USING challenge at offset 8: {Convert.ToHexString(realChallenge)}");
                 }
                 else
                 {
@@ -609,8 +637,17 @@ namespace OrionClientLib.Pools
                     {
                         realChallenge[i] = configBytes[i]; // Challenge at offset 0
                     }
-                    _logger.Log(LogLevel.Debug, $"Trying challenge at offset 0 (fallback): {Convert.ToHexString(realChallenge)}");
+                    _logger.Log(LogLevel.Debug, $"USING challenge at offset 0 (fallback): {Convert.ToHexString(realChallenge)}");
                 }
+
+                // Compare with formats we tested above
+                _logger.Log(LogLevel.Debug, "=== CHALLENGE COMPARISON ===");
+                _logger.Log(LogLevel.Debug, $"💡 Compare this with the challenge from successful transaction analysis");
+                _logger.Log(LogLevel.Debug, $"Current config offset 0: {Convert.ToHexString(challenge0)}");
+                _logger.Log(LogLevel.Debug, $"Current config offset 8: {Convert.ToHexString(challenge8)}");
+                _logger.Log(LogLevel.Debug, $"Current config offset 0 (16b): {Convert.ToHexString(challenge16)}");
+                _logger.Log(LogLevel.Debug, $"Current config offset 8 (16b): {Convert.ToHexString(challengeMid16)}");
+                _logger.Log(LogLevel.Debug, "=== END COMPARISON ===");
                 
                 // Compare with previous challenge
                 bool challengeChanged = _currentChallenge == null || !realChallenge.SequenceEqual(_currentChallenge);
@@ -916,6 +953,102 @@ namespace OrionClientLib.Pools
            catch (Exception ex)
            {
                _logger.Log(LogLevel.Warn, $"Account validation failed: {ex.Message}");
+           }
+       }
+
+       private async Task AnalyzeSuccessfulBitzTransactionAsync()
+       {
+           try
+           {
+               // Real successful Bitz mining transaction signature
+               var exampleTxSignature = "3wCWeTCvEkLfdMjgUt2quxWX1oZWhRLfxTruzpnjHFdkig6TVxzA2U2c7KAoJ8cWrcY5SvZ5qN2PsqkLGuTxbPR4";
+               
+               _logger.Log(LogLevel.Debug, $"=== ANALYZING SUCCESSFUL BITZ TRANSACTION ===");
+               _logger.Log(LogLevel.Debug, $"Fetching transaction: {exampleTxSignature}");
+               
+               // Fetch the successful transaction to see what challenge format was used
+               var txResult = await _rpcClient.GetTransactionAsync(exampleTxSignature);
+               
+               if (txResult.WasSuccessful && txResult.Result?.Transaction != null)
+               {
+                   _logger.Log(LogLevel.Debug, $"✅ Transaction found!");
+                   _logger.Log(LogLevel.Debug, $"Transaction slot: {txResult.Result.Slot}");
+                   _logger.Log(LogLevel.Debug, $"Block time: {txResult.Result.BlockTime}");
+                   
+                   // Look for instruction data that might contain the challenge
+                   var instructions = txResult.Result.Transaction.Message.Instructions;
+                   _logger.Log(LogLevel.Debug, $"Transaction has {instructions.Count} instructions");
+                   
+                   for (int i = 0; i < instructions.Count; i++)
+                   {
+                       var instruction = instructions[i];
+                       _logger.Log(LogLevel.Debug, $"Instruction {i}: Program index {instruction.ProgramIdIndex}, Data: {instruction.Data}");
+                       
+                       if (instruction.ProgramIdIndex < txResult.Result.Transaction.Message.AccountKeys.Count)
+                       {
+                           var programId = txResult.Result.Transaction.Message.AccountKeys[instruction.ProgramIdIndex];
+                           _logger.Log(LogLevel.Debug, $"Instruction {i} Program ID: {programId}");
+                           
+                           if (programId == BitzProgram.ProgramId.Key)
+                           {
+                               _logger.Log(LogLevel.Debug, $"🎯 Found Bitz instruction #{i} with data: {instruction.Data}");
+                               
+                               try
+                               {
+                                   var instructionBytes = Convert.FromBase64String(instruction.Data);
+                                   _logger.Log(LogLevel.Debug, $"Instruction data length: {instructionBytes.Length} bytes");
+                                   _logger.Log(LogLevel.Debug, $"Instruction data hex: {Convert.ToHexString(instructionBytes)}");
+                                   
+                                   // The challenge might be embedded in the instruction data
+                                   // Different mining instructions have different formats
+                                   if (instructionBytes.Length >= 32)
+                                   {
+                                       // Try challenge at different offsets in the instruction data
+                                       var challenge0 = new byte[32];
+                                       Array.Copy(instructionBytes, 0, challenge0, 0, 32);
+                                       _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 0): {Convert.ToHexString(challenge0)}");
+                                       
+                                       if (instructionBytes.Length >= 40)
+                                       {
+                                           var challenge8 = new byte[32];
+                                           Array.Copy(instructionBytes, 8, challenge8, 0, 32);
+                                           _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 8): {Convert.ToHexString(challenge8)}");
+                                       }
+                                   }
+                                   
+                                   // Show first 64 bytes if available
+                                   var previewLen = Math.Min(64, instructionBytes.Length);
+                                   var preview = new byte[previewLen];
+                                   Array.Copy(instructionBytes, 0, preview, 0, previewLen);
+                                   _logger.Log(LogLevel.Debug, $"📋 First {previewLen} bytes: {Convert.ToHexString(preview)}");
+                               }
+                               catch (Exception ex)
+                               {
+                                   _logger.Log(LogLevel.Debug, $"❌ Error decoding instruction data: {ex.Message}");
+                               }
+                           }
+                       }
+                   }
+                   
+                   // Also log all account keys for reference
+                   _logger.Log(LogLevel.Debug, $"=== TRANSACTION ACCOUNTS ===");
+                   for (int i = 0; i < txResult.Result.Transaction.Message.AccountKeys.Count; i++)
+                   {
+                       _logger.Log(LogLevel.Debug, $"Account {i}: {txResult.Result.Transaction.Message.AccountKeys[i]}");
+                   }
+               }
+               else
+               {
+                   _logger.Log(LogLevel.Debug, $"❌ Could not fetch transaction: {txResult.Reason}");
+                   _logger.Log(LogLevel.Debug, $"HTTP Status: {txResult.HttpStatusCode}");
+               }
+               
+               _logger.Log(LogLevel.Debug, "=== END TRANSACTION ANALYSIS ===");
+           }
+           catch (Exception ex)
+           {
+               _logger.Log(LogLevel.Debug, $"Error analyzing transaction: {ex.Message}");
+               _logger.Log(LogLevel.Debug, $"Stack trace: {ex.StackTrace}");
            }
        }
    }
