@@ -367,9 +367,10 @@ namespace OrionClientLib.Pools
                 {
                     _logger.Log(LogLevel.Error, $"❌ Failed to create Bitz proof account: {result.Reason}");
                     _logger.Log(LogLevel.Error, $"HTTP Status: {result.HttpStatusCode}");
-                    if (result.ServerErrorData != null)
+                    if (result.ErrorData != null)
                     {
-                        _logger.Log(LogLevel.Error, $"Server Error: {result.ServerErrorData}");
+                        _logger.Log(LogLevel.Error, $"Server Error Code: {result.ServerErrorCode}");
+                        _logger.Log(LogLevel.Error, $"Error Data: {result.ErrorData}");
                     }
                     return false;
                 }
