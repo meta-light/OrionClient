@@ -123,9 +123,12 @@ namespace OrionClientLib.Pools
                 await CheckProofAccountAsync();
 
                 // Set up challenge timer (like ExamplePool)
+                _logger.Log(LogLevel.Info, "⏰ Setting up challenge timer (30 second intervals)");
                 _challengeTimer = new System.Timers.Timer(30000); // 30 seconds like ORE
                 _challengeTimer.Elapsed += (sender, e) =>
                 {
+                    _logger.Log(LogLevel.Debug, "⏰ Challenge timer elapsed - updating stats and generating new challenge");
+                    
                     // Update miner table with current stats
                     OnMinerUpdate?.Invoke(this, (
                         new[] { 
@@ -143,6 +146,7 @@ namespace OrionClientLib.Pools
                     GenerateNewChallenge();
                 };
            _challengeTimer.Start();
+           _logger.Log(LogLevel.Info, "✅ Challenge timer started successfully");
 
                 // Start wallet balance updates
                 _ = Task.Run(async () =>
@@ -528,6 +532,7 @@ namespace OrionClientLib.Pools
        {
             try
             {
+                _logger.Log(LogLevel.Debug, "🔄 GenerateNewChallenge called - attempting to fetch real challenge");
                 // Fetch REAL challenge from Bitz program on Eclipse blockchain
                 await FetchRealChallengeAsync();
             }
@@ -541,12 +546,16 @@ namespace OrionClientLib.Pools
         {
             try
             {
+                _logger.Log(LogLevel.Debug, "🔍 FetchRealChallengeAsync started");
+                
                 if (_rpcClient == null)
                 {
-                    _logger.Log(LogLevel.Warn, "RPC client not initialized, cannot fetch challenge");
+                    _logger.Log(LogLevel.Warn, "❌ RPC client not initialized, cannot fetch challenge");
                     return;
                 }
 
+                _logger.Log(LogLevel.Debug, $"🌐 Fetching Bitz config account: {BitzProgram.ConfigAddress}");
+                
                 // Fetch Bitz config account data to get the real challenge
                 var configResult = await _rpcClient.GetAccountInfoAsync(BitzProgram.ConfigAddress);
                 
