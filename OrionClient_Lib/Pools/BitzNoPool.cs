@@ -298,7 +298,7 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"Wallet: {_wallet.Account.PublicKey}");
                 _logger.Log(LogLevel.Debug, $"Proof Account: {_proofAccount}");
 
-                // Check SOL balance first since Eclipse uses SOL for gas fees
+                // Check ETH balance first since Eclipse uses ETH for gas fees
                 _logger.Log(LogLevel.Debug, "Checking ETH balance for gas fees...");
                 var balanceResult = await _rpcClient.GetBalanceAsync(_wallet.Account.PublicKey);
                 if (balanceResult.WasSuccessful)
@@ -308,13 +308,13 @@ namespace OrionClientLib.Pools
                     
                     if (ethBalance < 0.001) // Need at least 0.001 ETH for transaction fees
                     {
-                        _logger.Log(LogLevel.Error, $"❌ Insufficient SOL balance for transaction fees. Need at least 0.001 SOL, have {solBalance:0.000000000} SOL");
+                        _logger.Log(LogLevel.Error, $"❌ Insufficient ETH balance for transaction fees. Need at least 0.001 ETH, have {ethBalance:0.000000000} ETH");
                         return false;
                     }
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Warn, $"⚠️ Could not check SOL balance: {balanceResult.Reason}");
+                    _logger.Log(LogLevel.Warn, $"⚠️ Could not check ETH balance: {balanceResult.Reason}");
                 }
 
                 // Create register instruction to initialize proof account using BITZ PROGRAM ID
