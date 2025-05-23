@@ -403,18 +403,20 @@ namespace OrionClientLib.Pools
                     var tokenAccount = tokenAccounts.Result.Value.FirstOrDefault();
                     if (tokenAccount?.Account?.Data?.Parsed != null)
                     {
-                        // Parse token account data using the correct property access pattern
-                        var tokenInfo = tokenAccount.Account.Data.Parsed.GetRootElement().GetProperty("info");
-                        var tokenAmount = tokenInfo.GetProperty("tokenAmount");
-                        var balance = tokenAmount.GetProperty("amount").GetString();
-                        
-                        if (ulong.TryParse(balance, out ulong balanceRaw))
+                        // Parse token account data using the correct ParsedTokenAccountData structure
+                        var tokenAccountInfo = tokenAccount.Account.Data.Parsed.Info;
+                        if (tokenAccountInfo?.TokenAmount != null)
                         {
-                            var newBalance = balanceRaw / BitzProgram.BitzDecimals; // Using Bitz decimals
-                            if (Math.Abs(_walletBalance - newBalance) > 0.000001) // Only log if changed
+                            var balance = tokenAccountInfo.TokenAmount.Amount;
+                            
+                            if (ulong.TryParse(balance, out ulong balanceRaw))
                             {
-                                _logger.Log(LogLevel.Debug, $"Bitz wallet balance updated: {newBalance} BITZ");
-                                _walletBalance = newBalance;
+                                var newBalance = balanceRaw / BitzProgram.BitzDecimals; // Using Bitz decimals
+                                if (Math.Abs(_walletBalance - newBalance) > 0.000001) // Only log if changed
+                                {
+                                    _logger.Log(LogLevel.Debug, $"Bitz wallet balance updated: {newBalance} BITZ");
+                                    _walletBalance = newBalance;
+                                }
                             }
                         }
                     }
