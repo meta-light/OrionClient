@@ -526,9 +526,9 @@ namespace OrionClient
                     //Update logs
                     while (_logQueue.TryDequeue(out var log))
                     {
-                        if (_logTable.Rows.Count > 40)
+                        if (_logTable.Rows.Count > 25)
                         {
-                            _logTable.Rows.RemoveAt(40);
+                            _logTable.Rows.RemoveAt(25);
                         }
 
                         string color = "gray";
