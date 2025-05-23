@@ -657,8 +657,6 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"💡 Compare this with the challenge from successful transaction analysis");
                 _logger.Log(LogLevel.Debug, $"Current config offset 0: {Convert.ToHexString(challenge0)}");
                 _logger.Log(LogLevel.Debug, $"Current config offset 8: {Convert.ToHexString(challenge8)}");
-                _logger.Log(LogLevel.Debug, $"Current config offset 0 (16b): {Convert.ToHexString(challenge16)}");
-                _logger.Log(LogLevel.Debug, $"Current config offset 8 (16b): {Convert.ToHexString(challengeMid16)}");
                 _logger.Log(LogLevel.Debug, "=== END COMPARISON ===");
                 
                 // Compare with previous challenge
