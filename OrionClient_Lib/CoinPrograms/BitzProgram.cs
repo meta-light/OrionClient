@@ -13,6 +13,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+// example of an Bitz Mining TX: https://eclipsescan.xyz/tx/5KuQytCrs6wkBjvCaCK8QwrtkBuQuzK5TTMc8jBns2WGkUKSJ74Jia8LLo4QzAg8fZyrpgV1toE1zXfFVEaCCTmd
+// example of an ORE Mining TX: https://solscan.io/tx/2wbbfSjp4jtD3TMHFz21DkpWF5QjMsAUF4RqwcGyfPPkK2emkT8iadjjPjHJHCnVfNvKXRpLHmECdnvXTUuAZoWu
+
 namespace OrionClientLib.CoinPrograms
 {
     public class BitzProgram
@@ -49,10 +52,12 @@ namespace OrionClientLib.CoinPrograms
         public static PublicKey ProgramId = new PublicKey("EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd"); // Bitz Program ID
         public static readonly PublicKey NoopId = new PublicKey("F1ULBrY2Tjsmb1L4Wt4vX6UtiWRikLoRFWooSpxMM6nR"); // Bitz Noop ID
         public static readonly PublicKey BoostProgramId = new PublicKey("eBoFjsXMceooxywb8MeCqRCkQ2JEEsd5AUELXbaQfh8"); // Bitz Boost Program
+        public static readonly PublicKey BoostAuthority = new PublicKey("bitzHk1APR3UaTAKE4hwx48VkQEHzoPMg7HEQWaukLx");
 
-        // public static readonly PublicKey BoostAuthority = new PublicKey("HBUh9g46wk2X89CvaNN15UmsznP59rh6od1h8JwYAopk");
-
-        // public static readonly PublicKey BoostCheckpointId = new PublicKey("6qWtSWTmWRgzmLMMpPAgzckKy73BkzXWqoZun6usqdCM");
+        // public static readonly PublicKey BoostCheckpointId = new PublicKey("6qWtSWTmWRgzmLMMpPAgzckKy73BkzXWqoZun6usqdCM"); // having a hard time finding this for ORE
+        // could be AJZFPrGAMJkrYqZh9FDwmjPkXUQcdt72zLJJMJ8uAjoS or 49WndhATfh4KVdWgnCpwTzAgDzN4CcYPhBBYJu1HToJp or HWDgoDT8yevoq7g82pvZZGsbXSxT78D8kRirwq4AmduQ
+        // https://eclipsescan.xyz/tx/21DcuphDPjDRzsTrkT7hA87FSGZwe19FcCDeaS3TXrgybSSeZrEGazF8HLLDHSVEF8DwF6rb4ENnobUSPbKbCt6c
+        // https://eclipsescan.xyz/account/8BpjztAxesjvA9t4qUdEuPfzLBytyFLoeAuwHDg5WvAr
 
         public static PublicKey BoostConfig;
 
@@ -201,9 +206,9 @@ namespace OrionClientLib.CoinPrograms
                 AccountMeta.ReadOnly(ConfigAddress, false), // 44ewsha1UDV9DLwcZ6tHT9wFHmaHxJDD6SvYmhundtyv
                 AccountMeta.Writable(proof, false),
                 AccountMeta.ReadOnly(Instructions, false),
-                AccountMeta.ReadOnly(SlotHashesKey, false)
-                // AccountMeta.ReadOnly(new PublicKey("5wpgyJFziVdB2RHW3qUx7teZxCax5FsniZxELdxiKUFD"), false),    // Account #7 from real tx
-                // AccountMeta.Writable(new PublicKey("3YiLgGTS23imzTfkTZhfTzNDtiz1mrrQoB4f3yyFUByE"), false),     // Account #8 from real tx (writable)
+                AccountMeta.ReadOnly(SlotHashesKey, false),
+                AccountMeta.ReadOnly(new PublicKey("5wpgyJFziVdB2RHW3qUx7teZxCax5FsniZxELdxiKUFD"), false),    // Account #7 - Static Bitz account
+                AccountMeta.Writable(new PublicKey("3YiLgGTS23imzTfkTZhfTzNDtiz1mrrQoB4f3yyFUByE"), false),     // Account #8 - Static Bitz account (writable)
             };
 
             byte[] data = new byte[25];
