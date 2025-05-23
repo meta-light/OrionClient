@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using NLog;
+using System.IO;
 
 namespace OrionClientLib.Pools
 {
@@ -200,6 +201,13 @@ namespace OrionClientLib.Pools
                 Console.WriteLine($"DEBUG: RPC Client: {_rpcClient != null}");
                 Console.WriteLine($"DEBUG: Settings: {_settings != null}");
 
+                // Create debug file
+                var debugFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "bitz_debug.txt");
+                await File.WriteAllTextAsync(debugFile, $"=== BITZ DEBUG SESSION STARTED {DateTime.Now} ===\n");
+                
+                _logger.Log(LogLevel.Info, $"🔧 BITZ SETUP STARTING - Debug file: {debugFile}");
+                await Task.Delay(3000); // 3 second pause
+
                 // Initialize RPC client and settings if not already done
                 // (SetupAsync is called before ConnectAsync in the setup flow)
                 if (_settings == null || _rpcClient == null)
@@ -224,6 +232,9 @@ namespace OrionClientLib.Pools
 
                 // Analyze successful Bitz transactions to understand challenge format
                 await AnalyzeSuccessfulBitzTransactionAsync();
+
+                // Display critical debug info that user needs to see
+                await DisplayCriticalDebugAsync();
 
                 // Also check the mystery accounts from the real Bitz transaction
                 Console.WriteLine("=== MYSTERY ACCOUNTS FROM REAL BITZ TX ===");
@@ -590,29 +601,30 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"First 64 bytes of config: {Convert.ToHexString(firstBytes)}");
 
                 // Try multiple challenge formats to find the right one
-                _logger.Log(LogLevel.Debug, "=== TESTING DIFFERENT CHALLENGE FORMATS ===");
+                _logger.Log(LogLevel.Info, "=== TESTING CHALLENGE FORMATS ===");
+                await Task.Delay(2000);
                 
                 // Test 1: 32 bytes at offset 0
                 var challenge0 = new byte[32];
                 Array.Copy(configBytes, 0, challenge0, 0, 32);
-                _logger.Log(LogLevel.Debug, $"Challenge format 1 (offset 0, 32 bytes): {Convert.ToHexString(challenge0)}");
+                _logger.Log(LogLevel.Info, $"📋 FORMAT 1 (offset 0): {Convert.ToHexString(challenge0)}");
+                await Task.Delay(1000);
                 
                 // Test 2: 32 bytes at offset 8  
                 var challenge8 = new byte[32];
                 Array.Copy(configBytes, 8, challenge8, 0, 32);
-                _logger.Log(LogLevel.Debug, $"Challenge format 2 (offset 8, 32 bytes): {Convert.ToHexString(challenge8)}");
+                _logger.Log(LogLevel.Info, $"📋 FORMAT 2 (offset 8): {Convert.ToHexString(challenge8)}");
+                await Task.Delay(1000);
                 
-                // Test 3: First 16 bytes only (some mining protocols use shorter challenges)
-                var challenge16 = new byte[16];
-                Array.Copy(configBytes, 0, challenge16, 0, 16);
-                _logger.Log(LogLevel.Debug, $"Challenge format 3 (offset 0, 16 bytes): {Convert.ToHexString(challenge16)}");
+                // Write to debug file for persistence
+                var debugFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "bitz_debug.txt");
+                await File.AppendAllTextAsync(debugFile, $"[{DateTime.Now}] CURRENT CONFIG - Offset 0: {Convert.ToHexString(challenge0)}\n");
+                await File.AppendAllTextAsync(debugFile, $"[{DateTime.Now}] CURRENT CONFIG - Offset 8: {Convert.ToHexString(challenge8)}\n");
                 
-                // Test 4: Middle 16 bytes
-                var challengeMid16 = new byte[16];
-                Array.Copy(configBytes, 8, challengeMid16, 0, 16);
-                _logger.Log(LogLevel.Debug, $"Challenge format 4 (offset 8, 16 bytes): {Convert.ToHexString(challengeMid16)}");
+                _logger.Log(LogLevel.Info, $"💾 Debug saved to: {debugFile}");
+                await Task.Delay(1000);
                 
-                _logger.Log(LogLevel.Debug, "=== END CHALLENGE FORMAT TESTING ===");
+                _logger.Log(LogLevel.Info, "=== END CHALLENGE FORMATS ===");
 
                 // For now, use offset 8 approach, but we may need to try others
                 var realChallenge = new byte[32];
@@ -963,27 +975,29 @@ namespace OrionClientLib.Pools
                // Real successful Bitz mining transaction signature
                var exampleTxSignature = "3wCWeTCvEkLfdMjgUt2quxWX1oZWhRLfxTruzpnjHFdkig6TVxzA2U2c7KAoJ8cWrcY5SvZ5qN2PsqkLGuTxbPR4";
                
-               _logger.Log(LogLevel.Debug, $"=== ANALYZING SUCCESSFUL BITZ TRANSACTION ===");
-               _logger.Log(LogLevel.Debug, $"Signature: {exampleTxSignature}");
-               _logger.Log(LogLevel.Debug, $"Block: 71616995, Signer: 9bdy9DGTW1nSG65MemE69BGnxc6Gh3P3nR96CTHhQN6U");
+               _logger.Log(LogLevel.Info, $"=== ANALYZING SUCCESSFUL BITZ TRANSACTION ===");
+               await Task.Delay(2000); // 2 second pause so user can see
+               
+               _logger.Log(LogLevel.Info, $"📋 Successful TX: {exampleTxSignature}");
+               await Task.Delay(1000);
                
                // Analyze the successful instruction data from Eclipse explorer
                var successfulInstructionData = "025f6896a7949055b4c879f8a435356cc82400000000000000";
-               _logger.Log(LogLevel.Debug, $"📋 Successful instruction data: {successfulInstructionData}");
+               _logger.Log(LogLevel.Info, $"📊 SUCCESS INSTRUCTION: {successfulInstructionData}");
+               await Task.Delay(1000);
                
                var instructionBytes = Convert.FromHexString(successfulInstructionData);
-               _logger.Log(LogLevel.Debug, $"📊 Instruction length: {instructionBytes.Length} bytes");
-               
-               if (instructionBytes.Length >= 1)
-               {
-                   _logger.Log(LogLevel.Debug, $"🔢 Instruction discriminator: {instructionBytes[0]} (Mine instruction)");
-               }
                
                if (instructionBytes.Length >= 17)
                {
                    var solution = new byte[16];
                    Array.Copy(instructionBytes, 1, solution, 0, 16);
-                   _logger.Log(LogLevel.Debug, $"🎯 Successful solution: {Convert.ToHexString(solution)}");
+                   _logger.Log(LogLevel.Info, $"🎯 SUCCESS SOLUTION: {Convert.ToHexString(solution)}");
+                   await Task.Delay(1000);
+                   
+                   // Write to file for persistence
+                   var debugFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "bitz_debug.txt");
+                   await File.AppendAllTextAsync(debugFile, $"[{DateTime.Now}] SUCCESS SOLUTION: {Convert.ToHexString(solution)}\n");
                }
                
                if (instructionBytes.Length >= 25)
@@ -991,78 +1005,45 @@ namespace OrionClientLib.Pools
                    var nonceBytes = new byte[8];
                    Array.Copy(instructionBytes, 17, nonceBytes, 0, 8);
                    var nonce = BitConverter.ToUInt64(nonceBytes, 0);
-                   _logger.Log(LogLevel.Debug, $"🎲 Successful nonce: {nonce}");
-                   _logger.Log(LogLevel.Debug, $"🎲 Nonce bytes: {Convert.ToHexString(nonceBytes)}");
+                   _logger.Log(LogLevel.Info, $"🎲 SUCCESS NONCE: {nonce}");
+                   await Task.Delay(1000);
                }
                
-               _logger.Log(LogLevel.Debug, "🔍 ANALYSIS:");
-               _logger.Log(LogLevel.Debug, "- Account structure: ✅ MATCHES our code exactly");
-               _logger.Log(LogLevel.Debug, "- Wallet: ✅ SAME as ours (9bdy9DGTW1nSG65MemE69BGnxc6Gh3P3nR96CTHhQN6U)");
-               _logger.Log(LogLevel.Debug, "- Proof account: ✅ SAME as ours (HYtXZxYhT4k88GJRCXK6m2QHyQVU3f1okS8jEokZYjD8)");
-               _logger.Log(LogLevel.Debug, "- Transaction size: ✅ SAME as ours (~493 bytes)");
-               _logger.Log(LogLevel.Debug, "- Issue: ❌ Wrong challenge from config OR wrong solution generation");
-               
-               _logger.Log(LogLevel.Debug, "💡 NEXT STEPS:");
-               _logger.Log(LogLevel.Debug, "1. Compare our config challenge with what was active at block 71616995");
-               _logger.Log(LogLevel.Debug, "2. Verify our DrillX solution matches this format");
-               _logger.Log(LogLevel.Debug, "3. Check challenge timing synchronization");
-               
-               // Try to fetch the transaction via RPC for additional details
-               _logger.Log(LogLevel.Debug, "🌐 Attempting RPC fetch for additional details...");
-               var txResult = await _rpcClient.GetTransactionAsync(exampleTxSignature);
-               
-               if (txResult.WasSuccessful && txResult.Result?.Transaction != null)
-               {
-                   _logger.Log(LogLevel.Debug, $"✅ RPC Transaction found!");
-                   _logger.Log(LogLevel.Debug, $"📍 Block: {txResult.Result.Slot}");
-                   _logger.Log(LogLevel.Debug, $"⏰ Block time: {txResult.Result.BlockTime}");
-                   
-                   // Verify the instruction data matches
-                   var message = txResult.Result.Transaction.Message;
-                   var instructions = message.Instructions;
-                   
-                   if (instructions != null)
-                   {
-                       for (int i = 0; i < instructions.Length; i++)
-                       {
-                           var instruction = instructions[i];
-                           if (instruction.ProgramIdIndex < message.AccountKeys?.Length)
-                           {
-                               var programId = message.AccountKeys[instruction.ProgramIdIndex];
-                               if (programId == BitzProgram.ProgramId.Key)
-                               {
-                                   _logger.Log(LogLevel.Debug, $"✅ Found Bitz instruction #{i}");
-                                   _logger.Log(LogLevel.Debug, $"📋 RPC instruction data: {instruction.Data}");
-                                   
-                                   // Convert base64 to hex for comparison
-                                   try
-                                   {
-                                       var rpcBytes = Convert.FromBase64String(instruction.Data);
-                                       var rpcHex = Convert.ToHexString(rpcBytes).ToLower();
-                                       _logger.Log(LogLevel.Debug, $"📋 RPC data as hex: {rpcHex}");
-                                       _logger.Log(LogLevel.Debug, $"🔍 Explorer data:   {successfulInstructionData.ToLower()}");
-                                       _logger.Log(LogLevel.Debug, $"✅ Data match: {rpcHex == successfulInstructionData.ToLower()}");
-                                   }
-                                   catch (Exception ex)
-                                   {
-                                       _logger.Log(LogLevel.Debug, $"❌ Error comparing data: {ex.Message}");
-                                   }
-                               }
-                           }
-                       }
-                   }
-               }
-               else
-               {
-                   _logger.Log(LogLevel.Debug, $"❌ Could not fetch via RPC: {txResult?.Reason ?? "Unknown error"}");
-               }
-               
-               _logger.Log(LogLevel.Debug, "=== END TRANSACTION ANALYSIS ===");
+               _logger.Log(LogLevel.Info, "=== END TRANSACTION ANALYSIS ===");
+               await Task.Delay(2000);
            }
            catch (Exception ex)
            {
-               _logger.Log(LogLevel.Debug, $"❌ Error analyzing transaction: {ex.Message}");
-               _logger.Log(LogLevel.Debug, $"Stack trace: {ex.StackTrace}");
+               _logger.Log(LogLevel.Error, $"❌ Error analyzing transaction: {ex.Message}");
+           }
+       }
+
+       private async Task DisplayCriticalDebugAsync()
+       {
+           try
+           {
+               _logger.Log(LogLevel.Info, "🚨🚨🚨 CRITICAL DEBUG INFO 🚨🚨🚨");
+               await Task.Delay(2000);
+               
+               _logger.Log(LogLevel.Info, "📊 CHALLENGE STATUS:");
+               _logger.Log(LogLevel.Info, $"Current Challenge ID: {_challengeId}");
+               if (_currentChallenge != null)
+               {
+                   _logger.Log(LogLevel.Info, $"Current Challenge: {Convert.ToHexString(_currentChallenge)}");
+               }
+               await Task.Delay(2000);
+               
+               _logger.Log(LogLevel.Info, "🎯 EXPECTED SUCCESS SOLUTION: 5F6896A7949055B4C879F8A435356CC8");
+               await Task.Delay(2000);
+               
+               _logger.Log(LogLevel.Info, "💡 CHECK DESKTOP FOR bitz_debug.txt FILE!");
+               await Task.Delay(2000);
+               
+               _logger.Log(LogLevel.Info, "🚨🚨🚨 END CRITICAL DEBUG 🚨🚨🚨");
+           }
+           catch (Exception ex)
+           {
+               _logger.Log(LogLevel.Error, $"Error in debug display: {ex.Message}");
            }
        }
    }
