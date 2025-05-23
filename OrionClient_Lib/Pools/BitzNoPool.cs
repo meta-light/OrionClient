@@ -353,10 +353,10 @@ namespace OrionClientLib.Pools
                     Console.WriteLine($"DEBUG: ETH Balance: {ethBalance:0.000000000} ETH");
                     _logger.Log(LogLevel.Info, $"ETH Balance: {ethBalance:0.000000000} ETH");
                     
-                    if (ethBalance < 0.001) // Need at least 0.001 ETH for transaction fees
+                    if (ethBalance < 0.00005) // Need at least 0.0005 ETH for transaction fees (reduced from 0.001)
                     {
                         Console.WriteLine($"DEBUG: Insufficient ETH balance: {ethBalance:0.000000000} ETH");
-                        _logger.Log(LogLevel.Error, $"❌ Insufficient ETH balance for transaction fees. Need at least 0.001 ETH, have {ethBalance:0.000000000} ETH");
+                        _logger.Log(LogLevel.Error, $"❌ Insufficient ETH balance for transaction fees. Need at least 0.0005 ETH, have {ethBalance:0.000000000} ETH");
                         return false;
                     }
                 }
