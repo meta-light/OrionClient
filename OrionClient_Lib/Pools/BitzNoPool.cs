@@ -565,11 +565,17 @@ namespace OrionClientLib.Pools
 
                 // Decode base64 data to bytes
                 var configBytes = Convert.FromBase64String(configData[0]);
+                _logger.Log(LogLevel.Debug, $"Config account data size: {configBytes.Length} bytes");
+                
                 if (configBytes.Length < 40) // Need at least 40 bytes for challenge
                 {
                     _logger.Log(LogLevel.Warn, $"Config bytes too small: {configBytes.Length} bytes");
                     return;
                 }
+
+                // Log first 64 bytes in hex to understand structure
+                var firstBytes = configBytes.Take(Math.Min(64, configBytes.Length)).ToArray();
+                _logger.Log(LogLevel.Debug, $"First 64 bytes of config: {Convert.ToHexString(firstBytes)}");
 
                 // Extract real challenge from config bytes (usually starts at offset 8)
                 var realChallenge = new byte[32];
@@ -578,6 +584,9 @@ namespace OrionClientLib.Pools
                     realChallenge[i] = configBytes[8 + i]; // Challenge typically at offset 8
                 }
 
+                // Compare with previous challenge
+                bool challengeChanged = _currentChallenge == null || !realChallenge.SequenceEqual(_currentChallenge);
+                
                 _challengeId++;
                 _currentChallenge = realChallenge;
 
@@ -590,7 +599,7 @@ namespace OrionClientLib.Pools
                     TotalCPUNonces = ulong.MaxValue / 2 
                 });
 
-                _logger.Log(LogLevel.Info, $"✅ Fetched REAL challenge from Eclipse blockchain. Challenge ID: {_challengeId}");
+                _logger.Log(LogLevel.Info, $"✅ Fetched REAL challenge from Eclipse. ID: {_challengeId}, Changed: {challengeChanged}");
                 _logger.Log(LogLevel.Debug, $"Challenge: {Convert.ToHexString(_currentChallenge)}");
             }
             catch (Exception ex)
@@ -612,15 +621,15 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"Submitting solution to Bitz bus: {bus} (Program: {BitzProgram.ProgramId})");
                 
                 // Create mine transaction using BITZ PROGRAM ID
-                Console.WriteLine($"DEBUG: Creating mine instruction with accounts:");
-                Console.WriteLine($"DEBUG: - Signer: {_wallet.Account.PublicKey}");
-                Console.WriteLine($"DEBUG: - Bus: {bus}");
-                Console.WriteLine($"DEBUG: - Proof: {_proofAccount}");
-                Console.WriteLine($"DEBUG: - Solution length: {info.BestSolution.Length}");
-                Console.WriteLine($"DEBUG: - Nonce: {info.BestNonce}");
+                _logger.Log(LogLevel.Debug, $"Creating mine instruction with accounts:");
+                _logger.Log(LogLevel.Debug, $"- Signer: {_wallet.Account.PublicKey}");
+                _logger.Log(LogLevel.Debug, $"- Bus: {bus}");
+                _logger.Log(LogLevel.Debug, $"- Proof: {_proofAccount}");
+                _logger.Log(LogLevel.Debug, $"- Solution length: {info.BestSolution.Length}");
+                _logger.Log(LogLevel.Debug, $"- Nonce: {info.BestNonce}");
                 
                 // VALIDATE ALL ACCOUNTS BEFORE CREATING TRANSACTION
-                Console.WriteLine("DEBUG: Validating all mining accounts...");
+                _logger.Log(LogLevel.Debug, "Validating all mining accounts...");
                 await ValidateMiningAccountsAsync(bus);
                 
                 var mineInstruction = BitzProgram.Mine(
@@ -659,24 +668,24 @@ namespace OrionClientLib.Pools
                 // Submit transaction to ECLIPSE blockchain (not Solana mainnet)
                 var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
-                Console.WriteLine($"DEBUG: Mining tx submission result: {result.WasSuccessful}");
-                Console.WriteLine($"DEBUG: Mining tx size: {transactionBytes.Length} bytes");
+                _logger.Log(LogLevel.Debug, $"Mining tx submission result: {result.WasSuccessful}");
+                _logger.Log(LogLevel.Debug, $"Mining tx size: {transactionBytes.Length} bytes");
                 
                 if (result.WasSuccessful)
                 {
-                    Console.WriteLine($"DEBUG: MINING SUCCESS! Transaction: {result.Result}");
+                    _logger.Log(LogLevel.Info, $"✅ MINING SUCCESS! Transaction: {result.Result}");
                     _logger.Log(LogLevel.Info, $"Bitz solution submitted to Eclipse! Difficulty: {info.BestDifficulty}, Tx: {result.Result}");
                     // Note: Actual reward calculation would need to be fetched from Eclipse blockchain
                     _miningRewards += 1.0; // Placeholder
                 }
                 else
                 {
-                    Console.WriteLine($"DEBUG: MINING FAILED! Reason: {result.Reason}");
-                    Console.WriteLine($"DEBUG: HTTP Status: {result.HttpStatusCode}");
+                    _logger.Log(LogLevel.Warn, $"❌ MINING FAILED! Reason: {result.Reason}");
+                    _logger.Log(LogLevel.Debug, $"HTTP Status: {result.HttpStatusCode}");
                     if (result.ErrorData != null)
                     {
-                        Console.WriteLine($"DEBUG: Server Error Code: {result.ServerErrorCode}");
-                        Console.WriteLine($"DEBUG: Error Data: {result.ErrorData}");
+                        _logger.Log(LogLevel.Debug, $"Server Error Code: {result.ServerErrorCode}");
+                        _logger.Log(LogLevel.Debug, $"Error Data: {result.ErrorData}");
                     }
                     _logger.Log(LogLevel.Warn, $"Failed to submit Bitz solution to Eclipse: {result.Reason}");
                 }
@@ -813,64 +822,64 @@ namespace OrionClientLib.Pools
        {
            try
            {
-               Console.WriteLine("DEBUG: Checking all 8 mining accounts...");
+               _logger.Log(LogLevel.Debug, "Checking all 8 mining accounts...");
                
                // Account 1: Signer (our wallet)
-               Console.WriteLine($"DEBUG: Account 1 - Signer: {_wallet.Account.PublicKey} ✓");
+               _logger.Log(LogLevel.Debug, $"Account 1 - Signer: {_wallet.Account.PublicKey} ✓");
                
                // Account 2: Bus  
                var busInfo = await _rpcClient.GetAccountInfoAsync(bus);
-               Console.WriteLine($"DEBUG: Account 2 - Bus: {bus} - Exists: {busInfo.WasSuccessful && busInfo.Result?.Value != null}");
+               _logger.Log(LogLevel.Debug, $"Account 2 - Bus: {bus} - Exists: {busInfo.WasSuccessful && busInfo.Result?.Value != null}");
                if (busInfo.WasSuccessful && busInfo.Result?.Value != null)
                {
-                   Console.WriteLine($"DEBUG: Bus Owner: {busInfo.Result.Value.Owner}");
+                   _logger.Log(LogLevel.Debug, $"Bus Owner: {busInfo.Result.Value.Owner}");
                }
                
                // Account 3: Config
                var configInfo = await _rpcClient.GetAccountInfoAsync(BitzProgram.ConfigAddress);
-               Console.WriteLine($"DEBUG: Account 3 - Config: {BitzProgram.ConfigAddress} - Exists: {configInfo.WasSuccessful && configInfo.Result?.Value != null}");
+               _logger.Log(LogLevel.Debug, $"Account 3 - Config: {BitzProgram.ConfigAddress} - Exists: {configInfo.WasSuccessful && configInfo.Result?.Value != null}");
                if (configInfo.WasSuccessful && configInfo.Result?.Value != null)
                {
-                   Console.WriteLine($"DEBUG: Config Owner: {configInfo.Result.Value.Owner}");
+                   _logger.Log(LogLevel.Debug, $"Config Owner: {configInfo.Result.Value.Owner}");
                }
                
                // Account 4: Proof
                var proofInfo = await _rpcClient.GetAccountInfoAsync(_proofAccount);
-               Console.WriteLine($"DEBUG: Account 4 - Proof: {_proofAccount} - Exists: {proofInfo.WasSuccessful && proofInfo.Result?.Value != null}");
+               _logger.Log(LogLevel.Debug, $"Account 4 - Proof: {_proofAccount} - Exists: {proofInfo.WasSuccessful && proofInfo.Result?.Value != null}");
                if (proofInfo.WasSuccessful && proofInfo.Result?.Value != null)
                {
-                   Console.WriteLine($"DEBUG: Proof Owner: {proofInfo.Result.Value.Owner}");
+                   _logger.Log(LogLevel.Debug, $"Proof Owner: {proofInfo.Result.Value.Owner}");
                }
                
                // Account 5: Instructions sysvar
-               Console.WriteLine($"DEBUG: Account 5 - Instructions sysvar: Sysvar1nstructions1111111111111111111111111 ✓");
+               _logger.Log(LogLevel.Debug, $"Account 5 - Instructions sysvar: Sysvar1nstructions1111111111111111111111111 ✓");
                
                // Account 6: Slot hashes sysvar  
-               Console.WriteLine($"DEBUG: Account 6 - Slot hashes sysvar: SysvarS1otHashes111111111111111111111111111 ✓");
+               _logger.Log(LogLevel.Debug, $"Account 6 - Slot hashes sysvar: SysvarS1otHashes111111111111111111111111111 ✓");
                
                // Account 7: Static Bitz account
                var account7 = new PublicKey("5wpgyJFziVdB2RHW3qUx7teZxCax5FsniZxELdxiKUFD");
                var account7Info = await _rpcClient.GetAccountInfoAsync(account7);
-               Console.WriteLine($"DEBUG: Account 7 - Static: {account7} - Exists: {account7Info.WasSuccessful && account7Info.Result?.Value != null}");
+               _logger.Log(LogLevel.Debug, $"Account 7 - Static: {account7} - Exists: {account7Info.WasSuccessful && account7Info.Result?.Value != null}");
                if (account7Info.WasSuccessful && account7Info.Result?.Value != null)
                {
-                   Console.WriteLine($"DEBUG: Account 7 Owner: {account7Info.Result.Value.Owner}");
+                   _logger.Log(LogLevel.Debug, $"Account 7 Owner: {account7Info.Result.Value.Owner}");
                }
                
                // Account 8: Static Bitz account  
                var account8 = new PublicKey("3YiLgGTS23imzTfkTZhfTzNDtiz1mrrQoB4f3yyFUByE");
                var account8Info = await _rpcClient.GetAccountInfoAsync(account8);
-               Console.WriteLine($"DEBUG: Account 8 - Static: {account8} - Exists: {account8Info.WasSuccessful && account8Info.Result?.Value != null}");
+               _logger.Log(LogLevel.Debug, $"Account 8 - Static: {account8} - Exists: {account8Info.WasSuccessful && account8Info.Result?.Value != null}");
                if (account8Info.WasSuccessful && account8Info.Result?.Value != null)
                {
-                   Console.WriteLine($"DEBUG: Account 8 Owner: {account8Info.Result.Value.Owner}");
+                   _logger.Log(LogLevel.Debug, $"Account 8 Owner: {account8Info.Result.Value.Owner}");
                }
                
-               Console.WriteLine("DEBUG: Account validation completed");
+               _logger.Log(LogLevel.Debug, "Account validation completed");
            }
            catch (Exception ex)
            {
-               Console.WriteLine($"DEBUG: Account validation failed: {ex.Message}");
+               _logger.Log(LogLevel.Warn, $"Account validation failed: {ex.Message}");
            }
        }
    }
