@@ -524,37 +524,70 @@ namespace OrionClientLib.Pools
             }
        }
 
-       private void GenerateNewChallenge()
+       private async void GenerateNewChallenge()
        {
             try
             {
-                // Generate challenge based on current time and randomness (like ORE does)
-           _challengeId++;
-           _currentChallenge = new byte[32];
-                
-                // Use a combination of current timestamp and randomness for challenge
-                var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                var timestampBytes = BitConverter.GetBytes(timestamp);
-                var randomBytes = new byte[24];
-                RandomNumberGenerator.Fill(randomBytes);
-                
-                Array.Copy(timestampBytes, 0, _currentChallenge, 0, 8);
-                Array.Copy(randomBytes, 0, _currentChallenge, 8, 24);
+                // Fetch REAL challenge from Bitz program on Eclipse blockchain
+                await FetchRealChallengeAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, $"Error fetching real challenge: {ex.Message}");
+            }
+        }
 
-           OnChallengeUpdate?.Invoke(this, new NewChallengeInfo
-           {
-               ChallengeId = _challengeId,
-               Challenge = _currentChallenge,
+        private async Task FetchRealChallengeAsync()
+        {
+            try
+            {
+                if (_rpcClient == null)
+                {
+                    _logger.Log(LogLevel.Warn, "RPC client not initialized, cannot fetch challenge");
+                    return;
+                }
+
+                // Fetch Bitz config account data to get the real challenge
+                var configResult = await _rpcClient.GetAccountInfoAsync(BitzProgram.ConfigAddress);
+                
+                if (!configResult.WasSuccessful || configResult.Result?.Value?.Data == null)
+                {
+                    _logger.Log(LogLevel.Warn, $"Failed to fetch Bitz config account: {configResult.Reason}");
+                    return;
+                }
+
+                var configData = configResult.Result.Value.Data;
+                if (configData.Count < 40) // Need at least 40 bytes for challenge
+                {
+                    _logger.Log(LogLevel.Warn, $"Config data too small: {configData.Count} bytes");
+                    return;
+                }
+
+                // Extract real challenge from config data (usually starts at offset 8)
+                var realChallenge = new byte[32];
+                for (int i = 0; i < 32; i++)
+                {
+                    realChallenge[i] = configData[8 + i]; // Challenge typically at offset 8
+                }
+
+                _challengeId++;
+                _currentChallenge = realChallenge;
+
+                OnChallengeUpdate?.Invoke(this, new NewChallengeInfo
+                {
+                    ChallengeId = _challengeId,
+                    Challenge = _currentChallenge,
                     StartNonce = 0,
                     EndNonce = ulong.MaxValue,
                     TotalCPUNonces = ulong.MaxValue / 2 
                 });
 
-                _logger.Log(LogLevel.Debug, $"New challenge generated. ID: {_challengeId}");
+                _logger.Log(LogLevel.Info, $"✅ Fetched REAL challenge from Eclipse blockchain. Challenge ID: {_challengeId}");
+                _logger.Log(LogLevel.Debug, $"Challenge: {Convert.ToHexString(_currentChallenge)}");
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Error generating challenge: {ex.Message}");
+                _logger.Log(LogLevel.Error, $"Exception fetching real challenge: {ex.Message}");
             }
         }
 
