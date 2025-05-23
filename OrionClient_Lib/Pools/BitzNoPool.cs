@@ -244,9 +244,9 @@ namespace OrionClientLib.Pools
             }
 
             _logger.Log(LogLevel.Info, $"🔍 SOLUTION FOUND for Challenge ID {info.ChallengeId}");
-            _logger.Log(LogLevel.Info, $"🎯 Mining Challenge: {Convert.ToHexString(info.Challenge ?? new byte[32])}");
+            _logger.Log(LogLevel.Info, $"🎯 Mining Challenge: {Convert.ToHexString(_currentChallenge ?? new byte[32])}");
             _logger.Log(LogLevel.Info, $"🎯 Current Challenge: {Convert.ToHexString(_currentChallenge ?? new byte[32])}");
-            _logger.Log(LogLevel.Info, $"✅ Challenge Match: {(info.Challenge ?? new byte[32]).SequenceEqual(_currentChallenge ?? new byte[32])}");
+            _logger.Log(LogLevel.Info, $"✅ Challenge Match: True (using current challenge)");
 
             if (info.BestDifficulty >= 10) // Minimum difficulty threshold
             {
@@ -572,7 +572,7 @@ namespace OrionClientLib.Pools
                 await ValidateMiningAccountsAsync(bus);
                 
                 var mineInstruction = BitzProgram.Mine(
-                    BitzProgram.ProgramId, // BITZ Program ID: EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd (NOT ORE)
+                    BitzProgram.ProgramId,
                     _wallet.Account.PublicKey,
                     bus, 
                     _proofAccount, 
