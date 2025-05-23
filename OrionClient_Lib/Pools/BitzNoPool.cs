@@ -210,6 +210,11 @@ namespace OrionClientLib.Pools
                     Console.WriteLine($"DEBUG: Eclipse RPC URL: {_settings.BitzRPCSetting.Url}");
                 }
 
+                // Check if proof account already exists first
+                Console.WriteLine("DEBUG: Checking if proof account already exists...");
+                await CheckProofAccountAsync();
+                Console.WriteLine($"DEBUG: Proof account exists check result: {_proofAccountExists}");
+
                 // Ensure proof account exists
                 if (!_proofAccountExists)
                 {
@@ -226,7 +231,7 @@ namespace OrionClientLib.Pools
                 }
                 else
                 {
-                    Console.WriteLine("DEBUG: Proof account already exists");
+                    Console.WriteLine("DEBUG: Proof account already exists, skipping creation");
                 }
 
                 Console.WriteLine("DEBUG: Setup completed successfully");
@@ -289,21 +294,48 @@ namespace OrionClientLib.Pools
             {
                 if (_rpcClient == null || _proofAccount == null)
                 {
+                    Console.WriteLine("DEBUG: CheckProofAccount - RPC client or proof account is null");
                     _logger.Log(LogLevel.Error, "CheckProofAccount: RPC client or proof account is null");
                     return false;
                 }
 
+                Console.WriteLine($"DEBUG: CheckProofAccount - Checking account: {_proofAccount}");
                 _logger.Log(LogLevel.Debug, $"Checking if proof account exists: {_proofAccount}");
                 var accountInfo = await _rpcClient.GetAccountInfoAsync(_proofAccount);
+                
+                Console.WriteLine($"DEBUG: CheckProofAccount - RPC call successful: {accountInfo.WasSuccessful}");
+                Console.WriteLine($"DEBUG: CheckProofAccount - Account result null: {accountInfo.Result?.Value == null}");
+                
+                if (accountInfo.WasSuccessful)
+                {
+                    if (accountInfo.Result?.Value != null)
+                    {
+                        Console.WriteLine($"DEBUG: CheckProofAccount - Account data length: {accountInfo.Result.Value.Data?.Length ?? 0}");
+                        Console.WriteLine($"DEBUG: CheckProofAccount - Account owner: {accountInfo.Result.Value.Owner}");
+                        Console.WriteLine($"DEBUG: CheckProofAccount - Account executable: {accountInfo.Result.Value.Executable}");
+                        Console.WriteLine($"DEBUG: CheckProofAccount - Account lamports: {accountInfo.Result.Value.Lamports}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("DEBUG: CheckProofAccount - Account result value is null (account doesn't exist)");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: CheckProofAccount - RPC call failed: {accountInfo.Reason}");
+                    Console.WriteLine($"DEBUG: CheckProofAccount - HTTP status: {accountInfo.HttpStatusCode}");
+                }
                 
                 _proofAccountExists = accountInfo.WasSuccessful && accountInfo.Result?.Value != null;
                 
                 if (_proofAccountExists)
                 {
+                    Console.WriteLine("DEBUG: CheckProofAccount - Account EXISTS, skipping creation");
                     _logger.Log(LogLevel.Info, $"✅ Proof account already exists: {_proofAccount}");
                 }
                 else
                 {
+                    Console.WriteLine("DEBUG: CheckProofAccount - Account DOES NOT EXIST, will create");
                     _logger.Log(LogLevel.Info, $"❌ Proof account does not exist: {_proofAccount}");
                     if (!accountInfo.WasSuccessful)
                     {
@@ -315,6 +347,7 @@ namespace OrionClientLib.Pools
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"DEBUG: CheckProofAccount - Exception: {ex.Message}");
                 _logger.Log(LogLevel.Warn, $"Error checking proof account: {ex.Message}");
                 return false;
             }
