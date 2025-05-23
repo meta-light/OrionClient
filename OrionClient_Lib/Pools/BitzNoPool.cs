@@ -5,6 +5,7 @@ using Solnet.Rpc;
 using Solnet.Rpc.Models;
 using Solnet.Wallet;
 using Solnet.Programs;
+using Solnet.Rpc.Builders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -252,27 +253,25 @@ namespace OrionClientLib.Pools
 
                 _logger.Log(LogLevel.Info, $"Creating Bitz proof account for program: {BitzProgram.ProgramId}");
 
-                // Get recent blockhash from ECLIPSE blockchain
-                var recentBlockhash = await _rpcClient.GetRecentBlockHashAsync();
+                // Get recent blockhash from ECLIPSE blockchain using the correct method name
+                var recentBlockhash = await _rpcClient.GetLatestBlockHashAsync();
                 if (!recentBlockhash.WasSuccessful)
                 {
                     _logger.Log(LogLevel.Warn, "Failed to get recent blockhash from Eclipse");
                     return false;
                 }
 
-                // Create and sign transaction
-                var transaction = new Transaction()
-                {
-                    RecentBlockHash = recentBlockhash.Result.Value.Blockhash,
-                    FeePayer = _wallet.Account.PublicKey,
-                    Instructions = new List<TransactionInstruction> { registerInstruction },
-                    Signatures = new List<SignaturePubkeyPair>()
-                };
+                // Create transaction using TransactionBuilder (the proper way)
+                var transactionBuilder = new TransactionBuilder()
+                    .SetRecentBlockHash(recentBlockhash.Result.Value.Blockhash)
+                    .SetFeePayer(_wallet.Account.PublicKey)
+                    .AddInstruction(registerInstruction);
 
-                transaction.Sign(_wallet);
+                // Build and sign transaction
+                var transactionBytes = transactionBuilder.Build(_wallet.Account);
 
                 // Submit transaction to ECLIPSE blockchain
-                var result = await _rpcClient.SendTransactionAsync(transaction);
+                var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
                 if (result.WasSuccessful)
                 {
@@ -349,27 +348,25 @@ namespace OrionClientLib.Pools
                     info.BestNonce
                 );
 
-                // Get recent blockhash from ECLIPSE blockchain (not Solana)
-                var recentBlockhash = await _rpcClient.GetRecentBlockHashAsync();
+                // Get recent blockhash from ECLIPSE blockchain (not Solana) using correct method
+                var recentBlockhash = await _rpcClient.GetLatestBlockHashAsync();
                 if (!recentBlockhash.WasSuccessful)
                 {
                     _logger.Log(LogLevel.Warn, "Failed to get blockhash from Eclipse for solution submission");
                     return;
                 }
 
-                // Create and sign transaction
-                var transaction = new Transaction()
-                {
-                    RecentBlockHash = recentBlockhash.Result.Value.Blockhash,
-                    FeePayer = _wallet.Account.PublicKey,
-                    Instructions = new List<TransactionInstruction> { mineInstruction },
-                    Signatures = new List<SignaturePubkeyPair>()
-                };
+                // Create transaction using TransactionBuilder (the proper way)
+                var transactionBuilder = new TransactionBuilder()
+                    .SetRecentBlockHash(recentBlockhash.Result.Value.Blockhash)
+                    .SetFeePayer(_wallet.Account.PublicKey)
+                    .AddInstruction(mineInstruction);
 
-                transaction.Sign(_wallet);
+                // Build and sign transaction
+                var transactionBytes = transactionBuilder.Build(_wallet.Account);
 
                 // Submit transaction to ECLIPSE blockchain (not Solana mainnet)
-                var result = await _rpcClient.SendTransactionAsync(transaction);
+                var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
                 if (result.WasSuccessful)
                 {
@@ -406,7 +403,8 @@ namespace OrionClientLib.Pools
                     var tokenAccount = tokenAccounts.Result.Value.FirstOrDefault();
                     if (tokenAccount?.Account?.Data?.Parsed != null)
                     {
-                        var tokenInfo = tokenAccount.Account.Data.Parsed.GetProperty("info");
+                        // Parse token account data using the correct property access pattern
+                        var tokenInfo = tokenAccount.Account.Data.Parsed.GetRootElement().GetProperty("info");
                         var tokenAmount = tokenInfo.GetProperty("tokenAmount");
                         var balance = tokenAmount.GetProperty("amount").GetString();
                         
