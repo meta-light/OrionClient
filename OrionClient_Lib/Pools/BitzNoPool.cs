@@ -310,7 +310,7 @@ namespace OrionClientLib.Pools
                 {
                     if (accountInfo.Result?.Value != null)
                     {
-                        Console.WriteLine($"DEBUG: CheckProofAccount - Account data length: {accountInfo.Result.Value.Data?.Length ?? 0}");
+                        Console.WriteLine($"DEBUG: CheckProofAccount - Account data length: {accountInfo.Result.Value.Data?.Count ?? 0}");
                         Console.WriteLine($"DEBUG: CheckProofAccount - Account owner: {accountInfo.Result.Value.Owner}");
                         Console.WriteLine($"DEBUG: CheckProofAccount - Account executable: {accountInfo.Result.Value.Executable}");
                         Console.WriteLine($"DEBUG: CheckProofAccount - Account lamports: {accountInfo.Result.Value.Lamports}");
