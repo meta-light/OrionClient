@@ -82,6 +82,38 @@ namespace OrionClientLib.Pools
                     _logger.Log(LogLevel.Info, $"Connected to Eclipse RPC: {_settings.BitzRPCSetting.Url}");
                 }
 
+                // Test RPC connectivity first
+                _logger.Log(LogLevel.Info, "Testing Eclipse RPC connectivity...");
+                try
+                {
+                    var healthCheck = await _rpcClient.GetHealthAsync();
+                    if (healthCheck.WasSuccessful)
+                    {
+                        _logger.Log(LogLevel.Info, "✅ Eclipse RPC health check passed");
+                    }
+                    else
+                    {
+                        _logger.Log(LogLevel.Warn, $"⚠️ Eclipse RPC health check failed: {healthCheck.Reason}");
+                    }
+
+                    // Try to get latest blockhash as secondary test
+                    var blockTest = await _rpcClient.GetLatestBlockHashAsync();
+                    if (blockTest.WasSuccessful)
+                    {
+                        _logger.Log(LogLevel.Info, $"✅ Eclipse RPC blockhash test passed: {blockTest.Result.Value.Blockhash}");
+                    }
+                    else
+                    {
+                        _logger.Log(LogLevel.Error, $"❌ Eclipse RPC blockhash test failed: {blockTest.Reason}");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log(LogLevel.Error, $"❌ Eclipse RPC connectivity test failed: {ex.Message}");
+                    return false;
+                }
+
                 // Verify we're using BITZ program IDs (not ORE)
                 _logger.Log(LogLevel.Debug, $"Using Bitz Program ID: {BitzProgram.ProgramId}");
                 _logger.Log(LogLevel.Debug, $"Using Bitz Noop ID: {BitzProgram.NoopId}");
@@ -220,10 +252,28 @@ namespace OrionClientLib.Pools
             try
             {
                 if (_rpcClient == null || _proofAccount == null)
+                {
+                    _logger.Log(LogLevel.Error, "CheckProofAccount: RPC client or proof account is null");
                     return false;
+                }
 
+                _logger.Log(LogLevel.Debug, $"Checking if proof account exists: {_proofAccount}");
                 var accountInfo = await _rpcClient.GetAccountInfoAsync(_proofAccount);
+                
                 _proofAccountExists = accountInfo.WasSuccessful && accountInfo.Result?.Value != null;
+                
+                if (_proofAccountExists)
+                {
+                    _logger.Log(LogLevel.Info, $"✅ Proof account already exists: {_proofAccount}");
+                }
+                else
+                {
+                    _logger.Log(LogLevel.Info, $"❌ Proof account does not exist: {_proofAccount}");
+                    if (!accountInfo.WasSuccessful)
+                    {
+                        _logger.Log(LogLevel.Debug, $"RPC call failed: {accountInfo.Reason}");
+                    }
+                }
                 
                 return _proofAccountExists;
             }
@@ -239,7 +289,33 @@ namespace OrionClientLib.Pools
             try
             {
                 if (_wallet == null || _rpcClient == null)
+                {
+                    _logger.Log(LogLevel.Error, "CreateProofAccount: Wallet or RPC client is null");
                     return false;
+                }
+
+                _logger.Log(LogLevel.Info, $"Creating Bitz proof account...");
+                _logger.Log(LogLevel.Debug, $"Wallet: {_wallet.Account.PublicKey}");
+                _logger.Log(LogLevel.Debug, $"Proof Account: {_proofAccount}");
+
+                // Check SOL balance first since Eclipse uses SOL for gas fees
+                _logger.Log(LogLevel.Debug, "Checking ETH balance for gas fees...");
+                var balanceResult = await _rpcClient.GetBalanceAsync(_wallet.Account.PublicKey);
+                if (balanceResult.WasSuccessful)
+                {
+                    var ethBalance = balanceResult.Result.Value / 1_000_000_000.0; // Convert lamports to ETH
+                    _logger.Log(LogLevel.Info, $"ETH Balance: {ethBalance:0.000000000} ETH");
+                    
+                    if (ethBalance < 0.001) // Need at least 0.001 ETH for transaction fees
+                    {
+                        _logger.Log(LogLevel.Error, $"❌ Insufficient SOL balance for transaction fees. Need at least 0.001 SOL, have {solBalance:0.000000000} SOL");
+                        return false;
+                    }
+                }
+                else
+                {
+                    _logger.Log(LogLevel.Warn, $"⚠️ Could not check SOL balance: {balanceResult.Reason}");
+                }
 
                 // Create register instruction to initialize proof account using BITZ PROGRAM ID
                 var registerInstruction = BitzProgram.Register(
@@ -251,15 +327,18 @@ namespace OrionClientLib.Pools
                     new PublicKey("SysvarS1otHashes111111111111111111111111111") // Solana sysvar (same across all networks)
                 );
 
-                _logger.Log(LogLevel.Info, $"Creating Bitz proof account for program: {BitzProgram.ProgramId}");
+                _logger.Log(LogLevel.Info, $"Created register instruction for Bitz program: {BitzProgram.ProgramId}");
 
                 // Get recent blockhash from ECLIPSE blockchain using the correct method name
+                _logger.Log(LogLevel.Debug, "Fetching latest blockhash from Eclipse...");
                 var recentBlockhash = await _rpcClient.GetLatestBlockHashAsync();
                 if (!recentBlockhash.WasSuccessful)
                 {
-                    _logger.Log(LogLevel.Warn, "Failed to get recent blockhash from Eclipse");
+                    _logger.Log(LogLevel.Error, $"Failed to get recent blockhash from Eclipse: {recentBlockhash.Reason} - {recentBlockhash.HttpStatusCode}");
                     return false;
                 }
+
+                _logger.Log(LogLevel.Debug, $"Got blockhash: {recentBlockhash.Result.Value.Blockhash}");
 
                 // Create transaction using TransactionBuilder (the proper way)
                 var transactionBuilder = new TransactionBuilder()
@@ -267,27 +346,38 @@ namespace OrionClientLib.Pools
                     .SetFeePayer(_wallet.Account.PublicKey)
                     .AddInstruction(registerInstruction);
 
+                _logger.Log(LogLevel.Debug, "Building and signing transaction...");
+
                 // Build and sign transaction
                 var transactionBytes = transactionBuilder.Build(_wallet.Account);
 
+                _logger.Log(LogLevel.Debug, $"Transaction built, size: {transactionBytes.Length} bytes");
+
                 // Submit transaction to ECLIPSE blockchain
+                _logger.Log(LogLevel.Info, "Submitting proof account creation transaction to Eclipse...");
                 var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
                 if (result.WasSuccessful)
                 {
-                    _logger.Log(LogLevel.Info, $"Bitz proof account created on Eclipse! Tx: {result.Result}");
+                    _logger.Log(LogLevel.Info, $"✅ Bitz proof account created on Eclipse! Tx: {result.Result}");
                     _proofAccountExists = true;
                     return true;
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Warn, $"Failed to create Bitz proof account: {result.Reason}");
+                    _logger.Log(LogLevel.Error, $"❌ Failed to create Bitz proof account: {result.Reason}");
+                    _logger.Log(LogLevel.Error, $"HTTP Status: {result.HttpStatusCode}");
+                    if (result.ServerErrorData != null)
+                    {
+                        _logger.Log(LogLevel.Error, $"Server Error: {result.ServerErrorData}");
+                    }
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Error creating Bitz proof account: {ex.Message}");
+                _logger.Log(LogLevel.Error, $"❌ Exception creating Bitz proof account: {ex.Message}");
+                _logger.Log(LogLevel.Debug, $"Stack trace: {ex.StackTrace}");
                 return false;
             }
         }
