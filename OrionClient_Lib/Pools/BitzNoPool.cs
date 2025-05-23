@@ -485,7 +485,7 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"Transaction built, size: {transactionBytes.Length} bytes");
 
                 Console.WriteLine("DEBUG: Submitting transaction to Eclipse...");
-                // Submit transaction to ECLIPSE blockchain
+                // Submit transaction to ECLIPSE blockchain (not Solana)
                 _logger.Log(LogLevel.Info, "Submitting proof account creation transaction to Eclipse...");
                 var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
@@ -557,17 +557,25 @@ namespace OrionClientLib.Pools
                 }
 
                 var configData = configResult.Result.Value.Data;
-                if (configData.Count < 40) // Need at least 40 bytes for challenge
+                if (configData.Count < 1) // Need at least 1 base64 string
                 {
-                    _logger.Log(LogLevel.Warn, $"Config data too small: {configData.Count} bytes");
+                    _logger.Log(LogLevel.Warn, $"Config data empty: {configData.Count} elements");
                     return;
                 }
 
-                // Extract real challenge from config data (usually starts at offset 8)
+                // Decode base64 data to bytes
+                var configBytes = Convert.FromBase64String(configData[0]);
+                if (configBytes.Length < 40) // Need at least 40 bytes for challenge
+                {
+                    _logger.Log(LogLevel.Warn, $"Config bytes too small: {configBytes.Length} bytes");
+                    return;
+                }
+
+                // Extract real challenge from config bytes (usually starts at offset 8)
                 var realChallenge = new byte[32];
                 for (int i = 0; i < 32; i++)
                 {
-                    realChallenge[i] = configData[8 + i]; // Challenge typically at offset 8
+                    realChallenge[i] = configBytes[8 + i]; // Challenge typically at offset 8
                 }
 
                 _challengeId++;
@@ -611,6 +619,10 @@ namespace OrionClientLib.Pools
                 Console.WriteLine($"DEBUG: - Solution length: {info.BestSolution.Length}");
                 Console.WriteLine($"DEBUG: - Nonce: {info.BestNonce}");
                 
+                // VALIDATE ALL ACCOUNTS BEFORE CREATING TRANSACTION
+                Console.WriteLine("DEBUG: Validating all mining accounts...");
+                await ValidateMiningAccountsAsync(bus);
+                
                 var mineInstruction = BitzProgram.Mine(
                     BitzProgram.ProgramId, // BITZ Program ID: EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd (NOT ORE)
                     _wallet.Account.PublicKey,
@@ -647,14 +659,25 @@ namespace OrionClientLib.Pools
                 // Submit transaction to ECLIPSE blockchain (not Solana mainnet)
                 var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
+                Console.WriteLine($"DEBUG: Mining tx submission result: {result.WasSuccessful}");
+                Console.WriteLine($"DEBUG: Mining tx size: {transactionBytes.Length} bytes");
+                
                 if (result.WasSuccessful)
                 {
+                    Console.WriteLine($"DEBUG: MINING SUCCESS! Transaction: {result.Result}");
                     _logger.Log(LogLevel.Info, $"Bitz solution submitted to Eclipse! Difficulty: {info.BestDifficulty}, Tx: {result.Result}");
                     // Note: Actual reward calculation would need to be fetched from Eclipse blockchain
                     _miningRewards += 1.0; // Placeholder
                 }
                 else
                 {
+                    Console.WriteLine($"DEBUG: MINING FAILED! Reason: {result.Reason}");
+                    Console.WriteLine($"DEBUG: HTTP Status: {result.HttpStatusCode}");
+                    if (result.ErrorData != null)
+                    {
+                        Console.WriteLine($"DEBUG: Server Error Code: {result.ServerErrorCode}");
+                        Console.WriteLine($"DEBUG: Error Data: {result.ErrorData}");
+                    }
                     _logger.Log(LogLevel.Warn, $"Failed to submit Bitz solution to Eclipse: {result.Reason}");
                 }
             }
@@ -784,6 +807,71 @@ namespace OrionClientLib.Pools
             {
                 Console.WriteLine($"DEBUG: Error fetching on-chain data: {ex.Message}");
             }
+       }
+
+       private async Task ValidateMiningAccountsAsync(PublicKey bus)
+       {
+           try
+           {
+               Console.WriteLine("DEBUG: Checking all 8 mining accounts...");
+               
+               // Account 1: Signer (our wallet)
+               Console.WriteLine($"DEBUG: Account 1 - Signer: {_wallet.Account.PublicKey} ✓");
+               
+               // Account 2: Bus  
+               var busInfo = await _rpcClient.GetAccountInfoAsync(bus);
+               Console.WriteLine($"DEBUG: Account 2 - Bus: {bus} - Exists: {busInfo.WasSuccessful && busInfo.Result?.Value != null}");
+               if (busInfo.WasSuccessful && busInfo.Result?.Value != null)
+               {
+                   Console.WriteLine($"DEBUG: Bus Owner: {busInfo.Result.Value.Owner}");
+               }
+               
+               // Account 3: Config
+               var configInfo = await _rpcClient.GetAccountInfoAsync(BitzProgram.ConfigAddress);
+               Console.WriteLine($"DEBUG: Account 3 - Config: {BitzProgram.ConfigAddress} - Exists: {configInfo.WasSuccessful && configInfo.Result?.Value != null}");
+               if (configInfo.WasSuccessful && configInfo.Result?.Value != null)
+               {
+                   Console.WriteLine($"DEBUG: Config Owner: {configInfo.Result.Value.Owner}");
+               }
+               
+               // Account 4: Proof
+               var proofInfo = await _rpcClient.GetAccountInfoAsync(_proofAccount);
+               Console.WriteLine($"DEBUG: Account 4 - Proof: {_proofAccount} - Exists: {proofInfo.WasSuccessful && proofInfo.Result?.Value != null}");
+               if (proofInfo.WasSuccessful && proofInfo.Result?.Value != null)
+               {
+                   Console.WriteLine($"DEBUG: Proof Owner: {proofInfo.Result.Value.Owner}");
+               }
+               
+               // Account 5: Instructions sysvar
+               Console.WriteLine($"DEBUG: Account 5 - Instructions sysvar: Sysvar1nstructions1111111111111111111111111 ✓");
+               
+               // Account 6: Slot hashes sysvar  
+               Console.WriteLine($"DEBUG: Account 6 - Slot hashes sysvar: SysvarS1otHashes111111111111111111111111111 ✓");
+               
+               // Account 7: Static Bitz account
+               var account7 = new PublicKey("5wpgyJFziVdB2RHW3qUx7teZxCax5FsniZxELdxiKUFD");
+               var account7Info = await _rpcClient.GetAccountInfoAsync(account7);
+               Console.WriteLine($"DEBUG: Account 7 - Static: {account7} - Exists: {account7Info.WasSuccessful && account7Info.Result?.Value != null}");
+               if (account7Info.WasSuccessful && account7Info.Result?.Value != null)
+               {
+                   Console.WriteLine($"DEBUG: Account 7 Owner: {account7Info.Result.Value.Owner}");
+               }
+               
+               // Account 8: Static Bitz account  
+               var account8 = new PublicKey("3YiLgGTS23imzTfkTZhfTzNDtiz1mrrQoB4f3yyFUByE");
+               var account8Info = await _rpcClient.GetAccountInfoAsync(account8);
+               Console.WriteLine($"DEBUG: Account 8 - Static: {account8} - Exists: {account8Info.WasSuccessful && account8Info.Result?.Value != null}");
+               if (account8Info.WasSuccessful && account8Info.Result?.Value != null)
+               {
+                   Console.WriteLine($"DEBUG: Account 8 Owner: {account8Info.Result.Value.Owner}");
+               }
+               
+               Console.WriteLine("DEBUG: Account validation completed");
+           }
+           catch (Exception ex)
+           {
+               Console.WriteLine($"DEBUG: Account validation failed: {ex.Message}");
+           }
        }
    }
 }
