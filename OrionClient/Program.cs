@@ -35,6 +35,7 @@ using ILGPU.Runtime.OpenCL;
 using System.Buffers.Binary;
 using OrionClient.Commands;
 using OrionEventLib;
+using OrionClientLib.CoinPrograms;
 
 namespace OrionClient
 {
@@ -134,7 +135,8 @@ namespace OrionClient
             {
                 new Ec1ipseOrePool(),
                 new ShinystCoalPool(),
-                new CustomOreHQPool()
+                new CustomOreHQPool(),
+                new BitzNoPool(),
             };
 
             _modules = new List<IModule>
@@ -193,6 +195,9 @@ namespace OrionClient
 
             _settings = await Settings.LoadAsync();
             await _settings.SaveAsync();
+
+            // Configure Bitz RPC client using saved settings
+            BitzProgram.SetRpcClient(_settings.BitzRPCSetting.Url);
 
             if (!await HandleSettings(args))
             {
