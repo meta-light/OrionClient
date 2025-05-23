@@ -674,25 +674,25 @@ namespace OrionClientLib.Pools
        {
            try
            {
-               _logger.Log(LogLevel.Debug, "Checking all 8 mining accounts...");
-               _logger.Log(LogLevel.Debug, $"Account 1 - Signer: {_wallet.Account.PublicKey} ✓");
+            //    _logger.Log(LogLevel.Debug, "Checking all 8 mining accounts...");
+            //    _logger.Log(LogLevel.Debug, $"Account 1 - Signer: {_wallet.Account.PublicKey} ✓");
                
                var busInfo = await _rpcClient.GetAccountInfoAsync(bus);
-               _logger.Log(LogLevel.Debug, $"Account 2 - Bus: {bus} - Exists: {busInfo.WasSuccessful && busInfo.Result?.Value != null}");
+            //    _logger.Log(LogLevel.Debug, $"Account 2 - Bus: {bus} - Exists: {busInfo.WasSuccessful && busInfo.Result?.Value != null}");
                if (busInfo.WasSuccessful && busInfo.Result?.Value != null)
                {
                    _logger.Log(LogLevel.Debug, $"Bus Owner: {busInfo.Result.Value.Owner}");
                }
                
                var configInfo = await _rpcClient.GetAccountInfoAsync(BitzProgram.ConfigAddress);
-               _logger.Log(LogLevel.Debug, $"Account 3 - Config: {BitzProgram.ConfigAddress} - Exists: {configInfo.WasSuccessful && configInfo.Result?.Value != null}");
+            //    _logger.Log(LogLevel.Debug, $"Account 3 - Config: {BitzProgram.ConfigAddress} - Exists: {configInfo.WasSuccessful && configInfo.Result?.Value != null}");
                if (configInfo.WasSuccessful && configInfo.Result?.Value != null)
                {
                    _logger.Log(LogLevel.Debug, $"Config Owner: {configInfo.Result.Value.Owner}");
                }
                
                var proofInfo = await _rpcClient.GetAccountInfoAsync(_proofAccount);
-               _logger.Log(LogLevel.Debug, $"Account 4 - Proof: {_proofAccount} - Exists: {proofInfo.WasSuccessful && proofInfo.Result?.Value != null}");
+            //    _logger.Log(LogLevel.Debug, $"Account 4 - Proof: {_proofAccount} - Exists: {proofInfo.WasSuccessful && proofInfo.Result?.Value != null}");
                if (proofInfo.WasSuccessful && proofInfo.Result?.Value != null)
                {
                    _logger.Log(LogLevel.Debug, $"Proof Owner: {proofInfo.Result.Value.Owner}");
@@ -700,7 +700,7 @@ namespace OrionClientLib.Pools
                
                var account7 = new PublicKey("5wpgyJFziVdB2RHW3qUx7teZxCax5FsniZxELdxiKUFD");
                var account7Info = await _rpcClient.GetAccountInfoAsync(account7);
-               _logger.Log(LogLevel.Debug, $"Account 7 - Static: {account7} - Exists: {account7Info.WasSuccessful && account7Info.Result?.Value != null}");
+            //    _logger.Log(LogLevel.Debug, $"Account 7 - Static: {account7} - Exists: {account7Info.WasSuccessful && account7Info.Result?.Value != null}");
                if (account7Info.WasSuccessful && account7Info.Result?.Value != null)
                {
                    _logger.Log(LogLevel.Debug, $"Account 7 Owner: {account7Info.Result.Value.Owner}");
@@ -708,7 +708,7 @@ namespace OrionClientLib.Pools
                
                var account8 = new PublicKey("3YiLgGTS23imzTfkTZhfTzNDtiz1mrrQoB4f3yyFUByE");
                var account8Info = await _rpcClient.GetAccountInfoAsync(account8);
-               _logger.Log(LogLevel.Debug, $"Account 8 - Static: {account8} - Exists: {account8Info.WasSuccessful && account8Info.Result?.Value != null}");
+            //    _logger.Log(LogLevel.Debug, $"Account 8 - Static: {account8} - Exists: {account8Info.WasSuccessful && account8Info.Result?.Value != null}");
                if (account8Info.WasSuccessful && account8Info.Result?.Value != null)
                {
                    _logger.Log(LogLevel.Debug, $"Account 8 Owner: {account8Info.Result.Value.Owner}");
