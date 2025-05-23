@@ -976,55 +976,59 @@ namespace OrionClientLib.Pools
                    _logger.Log(LogLevel.Debug, $"Block time: {txResult.Result.BlockTime}");
                    
                    // Look for instruction data that might contain the challenge
-                   var instructions = txResult.Result.Transaction.Message.Instructions;
-                   _logger.Log(LogLevel.Debug, $"Transaction has {instructions.Count} instructions");
+                   var message = txResult.Result.Transaction.Message;
+                   var instructions = message.Instructions;
+                   _logger.Log(LogLevel.Debug, $"Transaction has {instructions?.Length ?? 0} instructions");
                    
-                   for (int i = 0; i < instructions.Count; i++)
+                   if (instructions != null)
                    {
-                       var instruction = instructions[i];
-                       _logger.Log(LogLevel.Debug, $"Instruction {i}: Program index {instruction.ProgramIdIndex}, Data: {instruction.Data}");
-                       
-                       if (instruction.ProgramIdIndex < txResult.Result.Transaction.Message.AccountKeys.Count)
+                       for (int i = 0; i < instructions.Length; i++)
                        {
-                           var programId = txResult.Result.Transaction.Message.AccountKeys[instruction.ProgramIdIndex];
-                           _logger.Log(LogLevel.Debug, $"Instruction {i} Program ID: {programId}");
+                           var instruction = instructions[i];
+                           _logger.Log(LogLevel.Debug, $"Instruction {i}: Program index {instruction.ProgramIdIndex}, Data: {instruction.Data}");
                            
-                           if (programId == BitzProgram.ProgramId.Key)
+                           if (instruction.ProgramIdIndex < message.AccountKeys?.Length)
                            {
-                               _logger.Log(LogLevel.Debug, $"🎯 Found Bitz instruction #{i} with data: {instruction.Data}");
+                               var programId = message.AccountKeys[instruction.ProgramIdIndex];
+                               _logger.Log(LogLevel.Debug, $"Instruction {i} Program ID: {programId}");
                                
-                               try
+                               if (programId == BitzProgram.ProgramId.Key)
                                {
-                                   var instructionBytes = Convert.FromBase64String(instruction.Data);
-                                   _logger.Log(LogLevel.Debug, $"Instruction data length: {instructionBytes.Length} bytes");
-                                   _logger.Log(LogLevel.Debug, $"Instruction data hex: {Convert.ToHexString(instructionBytes)}");
+                                   _logger.Log(LogLevel.Debug, $"🎯 Found Bitz instruction #{i} with data: {instruction.Data}");
                                    
-                                   // The challenge might be embedded in the instruction data
-                                   // Different mining instructions have different formats
-                                   if (instructionBytes.Length >= 32)
+                                   try
                                    {
-                                       // Try challenge at different offsets in the instruction data
-                                       var challenge0 = new byte[32];
-                                       Array.Copy(instructionBytes, 0, challenge0, 0, 32);
-                                       _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 0): {Convert.ToHexString(challenge0)}");
+                                       var instructionBytes = Convert.FromBase64String(instruction.Data);
+                                       _logger.Log(LogLevel.Debug, $"Instruction data length: {instructionBytes.Length} bytes");
+                                       _logger.Log(LogLevel.Debug, $"Instruction data hex: {Convert.ToHexString(instructionBytes)}");
                                        
-                                       if (instructionBytes.Length >= 40)
+                                       // The challenge might be embedded in the instruction data
+                                       // Different mining instructions have different formats
+                                       if (instructionBytes.Length >= 32)
                                        {
-                                           var challenge8 = new byte[32];
-                                           Array.Copy(instructionBytes, 8, challenge8, 0, 32);
-                                           _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 8): {Convert.ToHexString(challenge8)}");
+                                           // Try challenge at different offsets in the instruction data
+                                           var challenge0 = new byte[32];
+                                           Array.Copy(instructionBytes, 0, challenge0, 0, 32);
+                                           _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 0): {Convert.ToHexString(challenge0)}");
+                                           
+                                           if (instructionBytes.Length >= 40)
+                                           {
+                                               var challenge8 = new byte[32];
+                                               Array.Copy(instructionBytes, 8, challenge8, 0, 32);
+                                               _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 8): {Convert.ToHexString(challenge8)}");
+                                           }
                                        }
+                                       
+                                       // Show first 64 bytes if available
+                                       var previewLen = Math.Min(64, instructionBytes.Length);
+                                       var preview = new byte[previewLen];
+                                       Array.Copy(instructionBytes, 0, preview, 0, previewLen);
+                                       _logger.Log(LogLevel.Debug, $"📋 First {previewLen} bytes: {Convert.ToHexString(preview)}");
                                    }
-                                   
-                                   // Show first 64 bytes if available
-                                   var previewLen = Math.Min(64, instructionBytes.Length);
-                                   var preview = new byte[previewLen];
-                                   Array.Copy(instructionBytes, 0, preview, 0, previewLen);
-                                   _logger.Log(LogLevel.Debug, $"📋 First {previewLen} bytes: {Convert.ToHexString(preview)}");
-                               }
-                               catch (Exception ex)
-                               {
-                                   _logger.Log(LogLevel.Debug, $"❌ Error decoding instruction data: {ex.Message}");
+                                   catch (Exception ex)
+                                   {
+                                       _logger.Log(LogLevel.Debug, $"❌ Error decoding instruction data: {ex.Message}");
+                                   }
                                }
                            }
                        }
@@ -1032,9 +1036,12 @@ namespace OrionClientLib.Pools
                    
                    // Also log all account keys for reference
                    _logger.Log(LogLevel.Debug, $"=== TRANSACTION ACCOUNTS ===");
-                   for (int i = 0; i < txResult.Result.Transaction.Message.AccountKeys.Count; i++)
+                   if (message.AccountKeys != null)
                    {
-                       _logger.Log(LogLevel.Debug, $"Account {i}: {txResult.Result.Transaction.Message.AccountKeys[i]}");
+                       for (int i = 0; i < message.AccountKeys.Length; i++)
+                       {
+                           _logger.Log(LogLevel.Debug, $"Account {i}: {message.AccountKeys[i]}");
+                       }
                    }
                }
                else
