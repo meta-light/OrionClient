@@ -180,28 +180,50 @@ namespace OrionClientLib.Pools
 
         public override async Task<(bool success, string errorMessage)> SetupAsync(CancellationToken token, bool initialSetup = false)
         {
+            Console.WriteLine("DEBUG: BitzNoPool.SetupAsync called!");
+            Console.WriteLine($"DEBUG: initialSetup = {initialSetup}");
+            
             if (_wallet == null)
             {
+                Console.WriteLine("DEBUG: Wallet is null, returning error");
                 return (false, "A full keypair is required for solo mining");
             }
 
             try
             {
+                Console.WriteLine("DEBUG: Starting Bitz setup...");
+                Console.WriteLine($"DEBUG: Wallet: {_wallet.Account.PublicKey}");
+                Console.WriteLine($"DEBUG: RPC Client: {_rpcClient != null}");
+                Console.WriteLine($"DEBUG: Settings: {_settings != null}");
+
                 // Ensure proof account exists
                 if (!_proofAccountExists)
                 {
+                    Console.WriteLine("DEBUG: Proof account doesn't exist, creating...");
                     var created = await CreateProofAccountAsync();
+                    Console.WriteLine($"DEBUG: CreateProofAccountAsync returned: {created}");
+                    
                     if (!created)
                     {
-                        return (false, "Failed to create proof account");
+                        var errorMsg = "Failed to create proof account - check console for detailed error logs";
+                        Console.WriteLine($"DEBUG: Setup failed: {errorMsg}");
+                        return (false, errorMsg);
                     }
                 }
+                else
+                {
+                    Console.WriteLine("DEBUG: Proof account already exists");
+                }
 
+                Console.WriteLine("DEBUG: Setup completed successfully");
                 return (true, string.Empty);
             }
             catch (Exception ex)
             {
-                return (false, $"Setup failed: {ex.Message}");
+                var errorMsg = $"Setup failed with exception: {ex.Message}";
+                Console.WriteLine($"DEBUG: Exception in Setup: {errorMsg}");
+                Console.WriteLine($"DEBUG: Stack trace: {ex.StackTrace}");
+                return (false, errorMsg);
             }
         }
 
@@ -288,35 +310,49 @@ namespace OrionClientLib.Pools
         {
             try
             {
+                Console.WriteLine("DEBUG: CreateProofAccountAsync started");
+                
                 if (_wallet == null || _rpcClient == null)
                 {
+                    Console.WriteLine("DEBUG: Wallet or RPC client is null");
                     _logger.Log(LogLevel.Error, "CreateProofAccount: Wallet or RPC client is null");
                     return false;
                 }
 
+                Console.WriteLine($"DEBUG: Creating proof account for wallet: {_wallet.Account.PublicKey}");
+                Console.WriteLine($"DEBUG: Proof account address: {_proofAccount}");
+                
                 _logger.Log(LogLevel.Info, $"Creating Bitz proof account...");
                 _logger.Log(LogLevel.Debug, $"Wallet: {_wallet.Account.PublicKey}");
                 _logger.Log(LogLevel.Debug, $"Proof Account: {_proofAccount}");
 
                 // Check ETH balance first since Eclipse uses ETH for gas fees
+                Console.WriteLine("DEBUG: Checking ETH balance...");
                 _logger.Log(LogLevel.Debug, "Checking ETH balance for gas fees...");
                 var balanceResult = await _rpcClient.GetBalanceAsync(_wallet.Account.PublicKey);
+                
+                Console.WriteLine($"DEBUG: Balance check result: {balanceResult.WasSuccessful}");
+                
                 if (balanceResult.WasSuccessful)
                 {
                     var ethBalance = balanceResult.Result.Value / 1_000_000_000.0; // Convert lamports to ETH
+                    Console.WriteLine($"DEBUG: ETH Balance: {ethBalance:0.000000000} ETH");
                     _logger.Log(LogLevel.Info, $"ETH Balance: {ethBalance:0.000000000} ETH");
                     
                     if (ethBalance < 0.001) // Need at least 0.001 ETH for transaction fees
                     {
+                        Console.WriteLine($"DEBUG: Insufficient ETH balance: {ethBalance:0.000000000} ETH");
                         _logger.Log(LogLevel.Error, $"❌ Insufficient ETH balance for transaction fees. Need at least 0.001 ETH, have {ethBalance:0.000000000} ETH");
                         return false;
                     }
                 }
                 else
                 {
+                    Console.WriteLine($"DEBUG: Could not check ETH balance: {balanceResult.Reason}");
                     _logger.Log(LogLevel.Warn, $"⚠️ Could not check ETH balance: {balanceResult.Reason}");
                 }
 
+                Console.WriteLine("DEBUG: Creating register instruction...");
                 // Create register instruction to initialize proof account using BITZ PROGRAM ID
                 var registerInstruction = BitzProgram.Register(
                     BitzProgram.ProgramId, // BITZ Program ID: EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd
@@ -327,19 +363,26 @@ namespace OrionClientLib.Pools
                     new PublicKey("SysvarS1otHashes111111111111111111111111111") // Solana sysvar (same across all networks)
                 );
 
+                Console.WriteLine("DEBUG: Getting latest blockhash...");
                 _logger.Log(LogLevel.Info, $"Created register instruction for Bitz program: {BitzProgram.ProgramId}");
 
                 // Get recent blockhash from ECLIPSE blockchain using the correct method name
                 _logger.Log(LogLevel.Debug, "Fetching latest blockhash from Eclipse...");
                 var recentBlockhash = await _rpcClient.GetLatestBlockHashAsync();
+                
+                Console.WriteLine($"DEBUG: Blockhash result: {recentBlockhash.WasSuccessful}");
+                
                 if (!recentBlockhash.WasSuccessful)
                 {
+                    Console.WriteLine($"DEBUG: Failed to get blockhash: {recentBlockhash.Reason}");
                     _logger.Log(LogLevel.Error, $"Failed to get recent blockhash from Eclipse: {recentBlockhash.Reason} - {recentBlockhash.HttpStatusCode}");
                     return false;
                 }
 
+                Console.WriteLine($"DEBUG: Got blockhash: {recentBlockhash.Result.Value.Blockhash}");
                 _logger.Log(LogLevel.Debug, $"Got blockhash: {recentBlockhash.Result.Value.Blockhash}");
 
+                Console.WriteLine("DEBUG: Building transaction...");
                 // Create transaction using TransactionBuilder (the proper way)
                 var transactionBuilder = new TransactionBuilder()
                     .SetRecentBlockHash(recentBlockhash.Result.Value.Blockhash)
@@ -351,24 +394,33 @@ namespace OrionClientLib.Pools
                 // Build and sign transaction
                 var transactionBytes = transactionBuilder.Build(_wallet.Account);
 
+                Console.WriteLine($"DEBUG: Transaction built, size: {transactionBytes.Length} bytes");
                 _logger.Log(LogLevel.Debug, $"Transaction built, size: {transactionBytes.Length} bytes");
 
+                Console.WriteLine("DEBUG: Submitting transaction to Eclipse...");
                 // Submit transaction to ECLIPSE blockchain
                 _logger.Log(LogLevel.Info, "Submitting proof account creation transaction to Eclipse...");
                 var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
+                Console.WriteLine($"DEBUG: Transaction submission result: {result.WasSuccessful}");
+                
                 if (result.WasSuccessful)
                 {
+                    Console.WriteLine($"DEBUG: SUCCESS! Transaction: {result.Result}");
                     _logger.Log(LogLevel.Info, $"✅ Bitz proof account created on Eclipse! Tx: {result.Result}");
                     _proofAccountExists = true;
                     return true;
                 }
                 else
                 {
+                    Console.WriteLine($"DEBUG: FAILED! Reason: {result.Reason}");
+                    Console.WriteLine($"DEBUG: HTTP Status: {result.HttpStatusCode}");
                     _logger.Log(LogLevel.Error, $"❌ Failed to create Bitz proof account: {result.Reason}");
                     _logger.Log(LogLevel.Error, $"HTTP Status: {result.HttpStatusCode}");
                     if (result.ErrorData != null)
                     {
+                        Console.WriteLine($"DEBUG: Error Code: {result.ServerErrorCode}");
+                        Console.WriteLine($"DEBUG: Error Data: {result.ErrorData}");
                         _logger.Log(LogLevel.Error, $"Server Error Code: {result.ServerErrorCode}");
                         _logger.Log(LogLevel.Error, $"Error Data: {result.ErrorData}");
                     }
@@ -377,6 +429,8 @@ namespace OrionClientLib.Pools
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"DEBUG: EXCEPTION in CreateProofAccountAsync: {ex.Message}");
+                Console.WriteLine($"DEBUG: Stack trace: {ex.StackTrace}");
                 _logger.Log(LogLevel.Error, $"❌ Exception creating Bitz proof account: {ex.Message}");
                 _logger.Log(LogLevel.Debug, $"Stack trace: {ex.StackTrace}");
                 return false;
