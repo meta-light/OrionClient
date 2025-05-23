@@ -196,6 +196,20 @@ namespace OrionClientLib.Pools
                 Console.WriteLine($"DEBUG: RPC Client: {_rpcClient != null}");
                 Console.WriteLine($"DEBUG: Settings: {_settings != null}");
 
+                // Initialize RPC client and settings if not already done
+                // (SetupAsync is called before ConnectAsync in the setup flow)
+                if (_settings == null || _rpcClient == null)
+                {
+                    Console.WriteLine("DEBUG: Initializing settings and RPC client...");
+                    _settings = await Settings.LoadAsync();
+                    BitzProgram.SetBitzRpcSettings(_settings.BitzRPCSetting);
+                    _rpcClient = BitzProgram.GetRpcClient();
+                    
+                    Console.WriteLine($"DEBUG: Settings loaded: {_settings != null}");
+                    Console.WriteLine($"DEBUG: RPC Client initialized: {_rpcClient != null}");
+                    Console.WriteLine($"DEBUG: Eclipse RPC URL: {_settings.BitzRPCSetting.Url}");
+                }
+
                 // Ensure proof account exists
                 if (!_proofAccountExists)
                 {
