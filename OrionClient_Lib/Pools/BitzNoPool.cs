@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using NLog;
 using System.IO;
+using System.Buffers.Binary;
 
 namespace OrionClientLib.Pools
 {
@@ -80,17 +81,17 @@ namespace OrionClientLib.Pools
                     _rpcClient = BitzProgram.GetRpcClient(); // Eclipse RPC, not Solana RPC
                     
                     // Log to confirm we're using Eclipse
-                    _logger.Log(LogLevel.Info, $"Connected to Eclipse RPC: {_settings.BitzRPCSetting.Url}");
+                    // _logger.Log(LogLevel.Info, $"Connected to Eclipse RPC: {_settings.BitzRPCSetting.Url}");
                 }
 
                 // Test RPC connectivity first
-                _logger.Log(LogLevel.Info, "Testing Eclipse RPC connectivity...");
+                // _logger.Log(LogLevel.Info, "Testing Eclipse RPC connectivity...");
                 try
                 {
                     var healthCheck = await _rpcClient.GetHealthAsync();
                     if (healthCheck.WasSuccessful)
                     {
-                        _logger.Log(LogLevel.Info, "✅ Eclipse RPC health check passed");
+                        // _logger.Log(LogLevel.Info, "✅ Eclipse RPC health check passed");
                     }
                     else
                     {
@@ -101,7 +102,7 @@ namespace OrionClientLib.Pools
                     var blockTest = await _rpcClient.GetLatestBlockHashAsync();
                     if (blockTest.WasSuccessful)
                     {
-                        _logger.Log(LogLevel.Info, $"✅ Eclipse RPC blockhash test passed: {blockTest.Result.Value.Blockhash}");
+                        // _logger.Log(LogLevel.Info, $"✅ Eclipse RPC blockhash test passed: {blockTest.Result.Value.Blockhash}");
                     }
                     else
                     {
@@ -116,9 +117,9 @@ namespace OrionClientLib.Pools
                 }
 
                 // Verify we're using BITZ program IDs (not ORE)
-                _logger.Log(LogLevel.Debug, $"Using Bitz Program ID: {BitzProgram.ProgramId}");
-                _logger.Log(LogLevel.Debug, $"Using Bitz Noop ID: {BitzProgram.NoopId}");
-                _logger.Log(LogLevel.Debug, $"Using Bitz Mint: {BitzProgram.MintId}");
+                // _logger.Log(LogLevel.Debug, $"Using Bitz Program ID: {BitzProgram.ProgramId}");
+                // _logger.Log(LogLevel.Debug, $"Using Bitz Noop ID: {BitzProgram.NoopId}");
+                // _logger.Log(LogLevel.Debug, $"Using Bitz Mint: {BitzProgram.MintId}");
 
                 // Check if proof account exists
                 await CheckProofAccountAsync();
@@ -166,7 +167,7 @@ namespace OrionClientLib.Pools
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Error connecting to Bitz solo pool: {ex.Message}");
+                // _logger.Log(LogLevel.Error, $"Error connecting to Bitz solo pool: {ex.Message}");
                 return false;
             }
         }
@@ -236,6 +237,9 @@ namespace OrionClientLib.Pools
                 // Display critical debug info that user needs to see
                 await DisplayCriticalDebugAsync();
 
+                // Test if we can reproduce the successful solution
+                await TestSolutionGenerationAsync();
+
                 // Also check the mystery accounts from the real Bitz transaction
                 Console.WriteLine("=== MYSTERY ACCOUNTS FROM REAL BITZ TX ===");
                 
@@ -245,10 +249,10 @@ namespace OrionClientLib.Pools
                 var account7Info = await _rpcClient.GetAccountInfoAsync(account7);
                 if (account7Info.WasSuccessful && account7Info.Result?.Value != null)
                 {
-                    Console.WriteLine($"DEBUG: Account #7 - Owner: {account7Info.Result.Value.Owner}");
-                    Console.WriteLine($"DEBUG: Account #7 - Lamports: {account7Info.Result.Value.Lamports}");
-                    Console.WriteLine($"DEBUG: Account #7 - Data Length: {account7Info.Result.Value.Data?.Count ?? 0}");
-                    Console.WriteLine($"DEBUG: Account #7 - Executable: {account7Info.Result.Value.Executable}");
+                    // Console.WriteLine($"DEBUG: Account #7 - Owner: {account7Info.Result.Value.Owner}");
+                    // Console.WriteLine($"DEBUG: Account #7 - Lamports: {account7Info.Result.Value.Lamports}");
+                    // Console.WriteLine($"DEBUG: Account #7 - Data Length: {account7Info.Result.Value.Data?.Count ?? 0}");
+                    // Console.WriteLine($"DEBUG: Account #7 - Executable: {account7Info.Result.Value.Executable}");
                 }
                 else
                 {
@@ -261,10 +265,10 @@ namespace OrionClientLib.Pools
                 var account8Info = await _rpcClient.GetAccountInfoAsync(account8);
                 if (account8Info.WasSuccessful && account8Info.Result?.Value != null)
                 {
-                    Console.WriteLine($"DEBUG: Account #8 - Owner: {account8Info.Result.Value.Owner}");
-                    Console.WriteLine($"DEBUG: Account #8 - Lamports: {account8Info.Result.Value.Lamports}");
-                    Console.WriteLine($"DEBUG: Account #8 - Data Length: {account8Info.Result.Value.Data?.Count ?? 0}");
-                    Console.WriteLine($"DEBUG: Account #8 - Executable: {account8Info.Result.Value.Executable}");
+                    // Console.WriteLine($"DEBUG: Account #8 - Owner: {account8Info.Result.Value.Owner}");
+                    // Console.WriteLine($"DEBUG: Account #8 - Lamports: {account8Info.Result.Value.Lamports}");
+                    // Console.WriteLine($"DEBUG: Account #8 - Data Length: {account8Info.Result.Value.Data?.Count ?? 0}");
+                    // Console.WriteLine($"DEBUG: Account #8 - Executable: {account8Info.Result.Value.Executable}");
                 }
                 else
                 {
@@ -711,6 +715,13 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"- Solution length: {info.BestSolution.Length}");
                 _logger.Log(LogLevel.Debug, $"- Nonce: {info.BestNonce}");
                 
+                // LOG EXACT SOLUTION DATA BEING SUBMITTED
+                _logger.Log(LogLevel.Info, $"🎯 SUBMITTING SOLUTION: {Convert.ToHexString(info.BestSolution)}");
+                _logger.Log(LogLevel.Info, $"🎲 SUBMITTING NONCE: {info.BestNonce}");
+                _logger.Log(LogLevel.Info, $"📊 CURRENT CHALLENGE: {Convert.ToHexString(_currentChallenge ?? new byte[32])}");
+                _logger.Log(LogLevel.Info, $"🆔 CHALLENGE ID: {_challengeId}");
+                await Task.Delay(1000); // Pause so user can see
+                
                 // VALIDATE ALL ACCOUNTS BEFORE CREATING TRANSACTION
                 _logger.Log(LogLevel.Debug, "Validating all mining accounts...");
                 await ValidateMiningAccountsAsync(bus);
@@ -748,6 +759,31 @@ namespace OrionClientLib.Pools
                 // Build and sign transaction
                 var transactionBytes = transactionBuilder.Build(_wallet.Account);
 
+                // LOG TRANSACTION DETAILS FOR COMPARISON
+                _logger.Log(LogLevel.Info, $"📦 TRANSACTION SIZE: {transactionBytes.Length} bytes");
+                
+                // Create the instruction data manually to log it
+                var instructionData = new List<byte>();
+                instructionData.Add(0x02); // Mine instruction discriminator
+                instructionData.AddRange(info.BestSolution); // 16-byte solution
+                
+                // Add nonce as 8 bytes little endian
+                var nonceBytes = new byte[8];
+                BinaryPrimitives.WriteUInt64LittleEndian(nonceBytes, info.BestNonce);
+                instructionData.AddRange(nonceBytes);
+                
+                var fullInstructionHex = Convert.ToHexString(instructionData.ToArray()).ToLower();
+                _logger.Log(LogLevel.Info, $"📋 OUR INSTRUCTION DATA: {fullInstructionHex}");
+                _logger.Log(LogLevel.Info, $"📋 SUCCESS INSTRUCTION: 025f6896a7949055b4c879f8a435356cc82400000000000000");
+                _logger.Log(LogLevel.Info, $"✅ INSTRUCTION MATCH: {fullInstructionHex == "025f6896a7949055b4c879f8a435356cc82400000000000000"}");
+                
+                // Write to debug file
+                var debugFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "bitz_debug.txt");
+                await File.AppendAllTextAsync(debugFile, $"[{DateTime.Now}] SUBMITTING - Solution: {Convert.ToHexString(info.BestSolution)}, Nonce: {info.BestNonce}\n");
+                await File.AppendAllTextAsync(debugFile, $"[{DateTime.Now}] INSTRUCTION: {fullInstructionHex}\n");
+                
+                await Task.Delay(2000); // Pause so user can see the comparison
+                
                 // Submit transaction to ECLIPSE blockchain (not Solana mainnet)
                 var result = await _rpcClient.SendTransactionAsync(transactionBytes);
                 
@@ -1044,5 +1080,102 @@ namespace OrionClientLib.Pools
                _logger.Log(LogLevel.Error, $"Error in debug display: {ex.Message}");
            }
        }
+
+       private async Task TestSolutionGenerationAsync()
+       {
+           try
+           {
+               _logger.Log(LogLevel.Info, "🧪 TESTING SOLUTION GENERATION 🧪");
+               await Task.Delay(2000);
+               
+               // Test data from successful transaction
+               var expectedSolution = Convert.FromHexString("5F6896A7949055B4C879F8A435356CC8");
+               var expectedNonce = 36UL;
+               
+               _logger.Log(LogLevel.Info, $"🎯 Expected Solution: {Convert.ToHexString(expectedSolution)}");
+               _logger.Log(LogLevel.Info, $"🎲 Expected Nonce: {expectedNonce}");
+               await Task.Delay(2000);
+               
+               // Test both current challenge formats to see if either produces the expected solution
+               var challenges = new[]
+               {
+                   ("Current Offset 0", Convert.FromHexString("65000000000000006900000000000000BFDF3068000000000800000000000000")),
+                   ("Current Offset 8", Convert.FromHexString("6900000000000000BFDF306800000000080000000000000000E8764817000000")),
+                   // Also test some variations that might have been the challenge when the successful tx was made
+                   ("Test Variation 1", Convert.FromHexString("6500000000000000ABCD1234000000000800000000000000000000000000000")),
+                   ("Test Variation 2", Convert.FromHexString("6900000000000000ABCD1234000000000800000000000000000000000000000"))
+               };
+               
+               foreach (var (name, challenge) in challenges)
+               {
+                   _logger.Log(LogLevel.Info, $"🔬 Testing {name}: {Convert.ToHexString(challenge)}");
+                   
+                   // Test if this challenge + nonce 36 produces the expected solution
+                   // We'll need to call the DrillX hasher directly
+                   var testResult = TestDrillXSolution(challenge, expectedNonce, expectedSolution);
+                   
+                   if (testResult)
+                   {
+                       _logger.Log(LogLevel.Info, $"✅ MATCH FOUND! Challenge: {name}");
+                       _logger.Log(LogLevel.Info, $"🎯 This challenge produces the expected solution!");
+                       
+                       // Write to debug file
+                       var debugFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "bitz_debug.txt");
+                       await File.AppendAllTextAsync(debugFile, $"[{DateTime.Now}] SOLUTION MATCH: {name} - {Convert.ToHexString(challenge)}\n");
+                   }
+                   else
+                   {
+                       _logger.Log(LogLevel.Info, $"❌ No match for {name}");
+                   }
+                   
+                   await Task.Delay(1000);
+               }
+               
+               _logger.Log(LogLevel.Info, "🧪 END SOLUTION TESTING 🧪");
+               await Task.Delay(2000);
+           }
+           catch (Exception ex)
+           {
+               _logger.Log(LogLevel.Error, $"Error in solution testing: {ex.Message}");
+           }
+       }
+        
+        private bool TestDrillXSolution(byte[] challenge, ulong nonce, byte[] expectedSolution)
+        {
+            try
+            {
+                // Create the full challenge format that DrillX expects:
+                // [8 bytes nonce][32 bytes challenge][remaining padding to 64 bytes]
+                var fullChallenge = new byte[64];
+                
+                // Write nonce at the beginning (little endian)
+                BinaryPrimitives.WriteUInt64LittleEndian(fullChallenge.AsSpan(), nonce);
+                
+                // Copy challenge starting at offset 8
+                challenge.AsSpan().CopyTo(fullChallenge.AsSpan().Slice(8));
+                
+                _logger.Log(LogLevel.Debug, $"Full DrillX challenge: {Convert.ToHexString(fullChallenge)}");
+                
+                // NOTE: To fully test this, we would need to:
+                // 1. Create a DrillX solver
+                // 2. Run the Haraka key building: Haraka.BuildKey(fullChallenge, sipKey)
+                // 3. Run solver.Solve_Opt_Haraka(...) 
+                // 4. Check if any of the solutions match expectedSolution
+                
+                // For now, just log what we're testing
+                _logger.Log(LogLevel.Debug, $"Would test nonce {nonce} with challenge {Convert.ToHexString(challenge)}");
+                _logger.Log(LogLevel.Debug, $"Expected solution: {Convert.ToHexString(expectedSolution)}");
+                
+                // This is where we would implement the actual DrillX test
+                // But it requires setting up the full DrillX solver infrastructure
+                
+                return false; // Placeholder
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Debug, $"Error testing DrillX: {ex.Message}");
+                return false;
+            }
+        }
    }
 }
