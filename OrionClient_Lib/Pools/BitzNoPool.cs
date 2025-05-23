@@ -577,12 +577,19 @@ namespace OrionClientLib.Pools
                 var firstBytes = configBytes.Take(Math.Min(64, configBytes.Length)).ToArray();
                 _logger.Log(LogLevel.Debug, $"First 64 bytes of config: {Convert.ToHexString(firstBytes)}");
 
-                // Extract real challenge from config bytes (usually starts at offset 8)
+                // Extract real challenge from config bytes - try different offsets
                 var realChallenge = new byte[32];
+                
+                // Try offset 0 first (challenge might be at the beginning)
                 for (int i = 0; i < 32; i++)
                 {
-                    realChallenge[i] = configBytes[8 + i]; // Challenge typically at offset 8
+                    realChallenge[i] = configBytes[i]; // Challenge at offset 0
                 }
+                
+                _logger.Log(LogLevel.Debug, $"Trying challenge at offset 0: {Convert.ToHexString(realChallenge)}");
+                
+                // If that doesn't work, we can try offset 8, 16, 32, etc.
+                // For now, let's test offset 0
 
                 // Compare with previous challenge
                 bool challengeChanged = _currentChallenge == null || !realChallenge.SequenceEqual(_currentChallenge);
