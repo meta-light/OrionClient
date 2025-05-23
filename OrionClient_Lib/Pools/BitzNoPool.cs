@@ -122,12 +122,12 @@ namespace OrionClientLib.Pools
                 // Check if proof account exists
                 await CheckProofAccountAsync();
 
-                // Set up challenge timer (like ExamplePool)
-                _logger.Log(LogLevel.Info, "⏰ Setting up challenge timer (30 second intervals)");
-                _challengeTimer = new System.Timers.Timer(30000); // 30 seconds like ORE
+                // Set up challenge timer (Eclipse challenges update less frequently than ORE)
+                _logger.Log(LogLevel.Info, "⏰ Setting up challenge timer (60 second intervals for Eclipse)");
+                _challengeTimer = new System.Timers.Timer(60000); // 60 seconds for Eclipse blockchain
                 _challengeTimer.Elapsed += (sender, e) =>
                 {
-                    _logger.Log(LogLevel.Debug, "⏰ Challenge timer elapsed - updating stats and generating new challenge");
+                    _logger.Log(LogLevel.Debug, "⏰ Challenge timer elapsed - checking for new Eclipse challenge");
                     
                     // Update miner table with current stats
                     OnMinerUpdate?.Invoke(this, (
@@ -141,7 +141,7 @@ namespace OrionClientLib.Pools
                         null
                     ));
 
-                    // Reset best difficulty and generate new challenge
+                    // Reset best difficulty for this challenge period and check for new challenge
                     _bestDifficulty = null;
                     GenerateNewChallenge();
                 };
@@ -532,7 +532,7 @@ namespace OrionClientLib.Pools
        {
             try
             {
-                _logger.Log(LogLevel.Debug, "🔄 GenerateNewChallenge called - attempting to fetch real challenge");
+                _logger.Log(LogLevel.Debug, "🔄 Checking for new challenge from Eclipse blockchain...");
                 // Fetch REAL challenge from Bitz program on Eclipse blockchain
                 await FetchRealChallengeAsync();
             }
@@ -589,34 +589,54 @@ namespace OrionClientLib.Pools
                 // Extract real challenge from config bytes - try different offsets
                 var realChallenge = new byte[32];
                 
-                // Try offset 0 first (challenge might be at the beginning)
-                for (int i = 0; i < 32; i++)
+                // The config data is 40 bytes total. Let's try different offsets:
+                // Offset 0: bytes 0-31 (current attempt)
+                // Offset 8: bytes 8-39 (skip first 8 bytes)
+                
+                // First try offset 8 (skip first 8 bytes which might be metadata)
+                if (configBytes.Length >= 40)
                 {
-                    realChallenge[i] = configBytes[i]; // Challenge at offset 0
+                    for (int i = 0; i < 32; i++)
+                    {
+                        realChallenge[i] = configBytes[i + 8]; // Challenge at offset 8
+                    }
+                    _logger.Log(LogLevel.Debug, $"Trying challenge at offset 8: {Convert.ToHexString(realChallenge)}");
+                }
+                else
+                {
+                    // Fallback to offset 0 if data is too small
+                    for (int i = 0; i < 32; i++)
+                    {
+                        realChallenge[i] = configBytes[i]; // Challenge at offset 0
+                    }
+                    _logger.Log(LogLevel.Debug, $"Trying challenge at offset 0 (fallback): {Convert.ToHexString(realChallenge)}");
                 }
                 
-                _logger.Log(LogLevel.Debug, $"Trying challenge at offset 0: {Convert.ToHexString(realChallenge)}");
-                
-                // If that doesn't work, we can try offset 8, 16, 32, etc.
-                // For now, let's test offset 0
-
                 // Compare with previous challenge
                 bool challengeChanged = _currentChallenge == null || !realChallenge.SequenceEqual(_currentChallenge);
                 
-                _challengeId++;
-                _currentChallenge = realChallenge;
-
-                OnChallengeUpdate?.Invoke(this, new NewChallengeInfo
+                // Only update if challenge actually changed
+                if (challengeChanged)
                 {
-                    ChallengeId = _challengeId,
-                    Challenge = _currentChallenge,
-                    StartNonce = 0,
-                    EndNonce = ulong.MaxValue,
-                    TotalCPUNonces = ulong.MaxValue / 2 
-                });
+                    _challengeId++;
+                    _currentChallenge = realChallenge;
 
-                _logger.Log(LogLevel.Info, $"✅ Fetched REAL challenge from Eclipse. ID: {_challengeId}, Changed: {challengeChanged}");
-                _logger.Log(LogLevel.Debug, $"Challenge: {Convert.ToHexString(_currentChallenge)}");
+                    OnChallengeUpdate?.Invoke(this, new NewChallengeInfo
+                    {
+                        ChallengeId = _challengeId,
+                        Challenge = _currentChallenge,
+                        StartNonce = 0,
+                        EndNonce = ulong.MaxValue,
+                        TotalCPUNonces = ulong.MaxValue / 2 
+                    });
+
+                    _logger.Log(LogLevel.Info, $"✅ NEW challenge from Eclipse! ID: {_challengeId}");
+                    _logger.Log(LogLevel.Debug, $"Challenge: {Convert.ToHexString(_currentChallenge)}");
+                }
+                else
+                {
+                    _logger.Log(LogLevel.Debug, $"⏸️ Eclipse challenge unchanged. ID: {_challengeId}");
+                }
             }
             catch (Exception ex)
             {
