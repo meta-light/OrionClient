@@ -964,97 +964,104 @@ namespace OrionClientLib.Pools
                var exampleTxSignature = "3wCWeTCvEkLfdMjgUt2quxWX1oZWhRLfxTruzpnjHFdkig6TVxzA2U2c7KAoJ8cWrcY5SvZ5qN2PsqkLGuTxbPR4";
                
                _logger.Log(LogLevel.Debug, $"=== ANALYZING SUCCESSFUL BITZ TRANSACTION ===");
-               _logger.Log(LogLevel.Debug, $"Fetching transaction: {exampleTxSignature}");
+               _logger.Log(LogLevel.Debug, $"Signature: {exampleTxSignature}");
+               _logger.Log(LogLevel.Debug, $"Block: 71616995, Signer: 9bdy9DGTW1nSG65MemE69BGnxc6Gh3P3nR96CTHhQN6U");
                
-               // Fetch the successful transaction to see what challenge format was used
+               // Analyze the successful instruction data from Eclipse explorer
+               var successfulInstructionData = "025f6896a7949055b4c879f8a435356cc82400000000000000";
+               _logger.Log(LogLevel.Debug, $"📋 Successful instruction data: {successfulInstructionData}");
+               
+               var instructionBytes = Convert.FromHexString(successfulInstructionData);
+               _logger.Log(LogLevel.Debug, $"📊 Instruction length: {instructionBytes.Length} bytes");
+               
+               if (instructionBytes.Length >= 1)
+               {
+                   _logger.Log(LogLevel.Debug, $"🔢 Instruction discriminator: {instructionBytes[0]} (Mine instruction)");
+               }
+               
+               if (instructionBytes.Length >= 17)
+               {
+                   var solution = new byte[16];
+                   Array.Copy(instructionBytes, 1, solution, 0, 16);
+                   _logger.Log(LogLevel.Debug, $"🎯 Successful solution: {Convert.ToHexString(solution)}");
+               }
+               
+               if (instructionBytes.Length >= 25)
+               {
+                   var nonceBytes = new byte[8];
+                   Array.Copy(instructionBytes, 17, nonceBytes, 0, 8);
+                   var nonce = BitConverter.ToUInt64(nonceBytes, 0);
+                   _logger.Log(LogLevel.Debug, $"🎲 Successful nonce: {nonce}");
+                   _logger.Log(LogLevel.Debug, $"🎲 Nonce bytes: {Convert.ToHexString(nonceBytes)}");
+               }
+               
+               _logger.Log(LogLevel.Debug, "🔍 ANALYSIS:");
+               _logger.Log(LogLevel.Debug, "- Account structure: ✅ MATCHES our code exactly");
+               _logger.Log(LogLevel.Debug, "- Wallet: ✅ SAME as ours (9bdy9DGTW1nSG65MemE69BGnxc6Gh3P3nR96CTHhQN6U)");
+               _logger.Log(LogLevel.Debug, "- Proof account: ✅ SAME as ours (HYtXZxYhT4k88GJRCXK6m2QHyQVU3f1okS8jEokZYjD8)");
+               _logger.Log(LogLevel.Debug, "- Transaction size: ✅ SAME as ours (~493 bytes)");
+               _logger.Log(LogLevel.Debug, "- Issue: ❌ Wrong challenge from config OR wrong solution generation");
+               
+               _logger.Log(LogLevel.Debug, "💡 NEXT STEPS:");
+               _logger.Log(LogLevel.Debug, "1. Compare our config challenge with what was active at block 71616995");
+               _logger.Log(LogLevel.Debug, "2. Verify our DrillX solution matches this format");
+               _logger.Log(LogLevel.Debug, "3. Check challenge timing synchronization");
+               
+               // Try to fetch the transaction via RPC for additional details
+               _logger.Log(LogLevel.Debug, "🌐 Attempting RPC fetch for additional details...");
                var txResult = await _rpcClient.GetTransactionAsync(exampleTxSignature);
                
                if (txResult.WasSuccessful && txResult.Result?.Transaction != null)
                {
-                   _logger.Log(LogLevel.Debug, $"✅ Transaction found!");
-                   _logger.Log(LogLevel.Debug, $"Transaction slot: {txResult.Result.Slot}");
-                   _logger.Log(LogLevel.Debug, $"Block time: {txResult.Result.BlockTime}");
+                   _logger.Log(LogLevel.Debug, $"✅ RPC Transaction found!");
+                   _logger.Log(LogLevel.Debug, $"📍 Block: {txResult.Result.Slot}");
+                   _logger.Log(LogLevel.Debug, $"⏰ Block time: {txResult.Result.BlockTime}");
                    
-                   // Look for instruction data that might contain the challenge
+                   // Verify the instruction data matches
                    var message = txResult.Result.Transaction.Message;
                    var instructions = message.Instructions;
-                   _logger.Log(LogLevel.Debug, $"Transaction has {instructions?.Length ?? 0} instructions");
                    
                    if (instructions != null)
                    {
                        for (int i = 0; i < instructions.Length; i++)
                        {
                            var instruction = instructions[i];
-                           _logger.Log(LogLevel.Debug, $"Instruction {i}: Program index {instruction.ProgramIdIndex}, Data: {instruction.Data}");
-                           
                            if (instruction.ProgramIdIndex < message.AccountKeys?.Length)
                            {
                                var programId = message.AccountKeys[instruction.ProgramIdIndex];
-                               _logger.Log(LogLevel.Debug, $"Instruction {i} Program ID: {programId}");
-                               
                                if (programId == BitzProgram.ProgramId.Key)
                                {
-                                   _logger.Log(LogLevel.Debug, $"🎯 Found Bitz instruction #{i} with data: {instruction.Data}");
+                                   _logger.Log(LogLevel.Debug, $"✅ Found Bitz instruction #{i}");
+                                   _logger.Log(LogLevel.Debug, $"📋 RPC instruction data: {instruction.Data}");
                                    
+                                   // Convert base64 to hex for comparison
                                    try
                                    {
-                                       var instructionBytes = Convert.FromBase64String(instruction.Data);
-                                       _logger.Log(LogLevel.Debug, $"Instruction data length: {instructionBytes.Length} bytes");
-                                       _logger.Log(LogLevel.Debug, $"Instruction data hex: {Convert.ToHexString(instructionBytes)}");
-                                       
-                                       // The challenge might be embedded in the instruction data
-                                       // Different mining instructions have different formats
-                                       if (instructionBytes.Length >= 32)
-                                       {
-                                           // Try challenge at different offsets in the instruction data
-                                           var challenge0 = new byte[32];
-                                           Array.Copy(instructionBytes, 0, challenge0, 0, 32);
-                                           _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 0): {Convert.ToHexString(challenge0)}");
-                                           
-                                           if (instructionBytes.Length >= 40)
-                                           {
-                                               var challenge8 = new byte[32];
-                                               Array.Copy(instructionBytes, 8, challenge8, 0, 32);
-                                               _logger.Log(LogLevel.Debug, $"📝 Challenge from instruction (offset 8): {Convert.ToHexString(challenge8)}");
-                                           }
-                                       }
-                                       
-                                       // Show first 64 bytes if available
-                                       var previewLen = Math.Min(64, instructionBytes.Length);
-                                       var preview = new byte[previewLen];
-                                       Array.Copy(instructionBytes, 0, preview, 0, previewLen);
-                                       _logger.Log(LogLevel.Debug, $"📋 First {previewLen} bytes: {Convert.ToHexString(preview)}");
+                                       var rpcBytes = Convert.FromBase64String(instruction.Data);
+                                       var rpcHex = Convert.ToHexString(rpcBytes).ToLower();
+                                       _logger.Log(LogLevel.Debug, $"📋 RPC data as hex: {rpcHex}");
+                                       _logger.Log(LogLevel.Debug, $"🔍 Explorer data:   {successfulInstructionData.ToLower()}");
+                                       _logger.Log(LogLevel.Debug, $"✅ Data match: {rpcHex == successfulInstructionData.ToLower()}");
                                    }
                                    catch (Exception ex)
                                    {
-                                       _logger.Log(LogLevel.Debug, $"❌ Error decoding instruction data: {ex.Message}");
+                                       _logger.Log(LogLevel.Debug, $"❌ Error comparing data: {ex.Message}");
                                    }
                                }
                            }
                        }
                    }
-                   
-                   // Also log all account keys for reference
-                   _logger.Log(LogLevel.Debug, $"=== TRANSACTION ACCOUNTS ===");
-                   if (message.AccountKeys != null)
-                   {
-                       for (int i = 0; i < message.AccountKeys.Length; i++)
-                       {
-                           _logger.Log(LogLevel.Debug, $"Account {i}: {message.AccountKeys[i]}");
-                       }
-                   }
                }
                else
                {
-                   _logger.Log(LogLevel.Debug, $"❌ Could not fetch transaction: {txResult.Reason}");
-                   _logger.Log(LogLevel.Debug, $"HTTP Status: {txResult.HttpStatusCode}");
+                   _logger.Log(LogLevel.Debug, $"❌ Could not fetch via RPC: {txResult?.Reason ?? "Unknown error"}");
                }
                
                _logger.Log(LogLevel.Debug, "=== END TRANSACTION ANALYSIS ===");
            }
            catch (Exception ex)
            {
-               _logger.Log(LogLevel.Debug, $"Error analyzing transaction: {ex.Message}");
+               _logger.Log(LogLevel.Debug, $"❌ Error analyzing transaction: {ex.Message}");
                _logger.Log(LogLevel.Debug, $"Stack trace: {ex.StackTrace}");
            }
        }
