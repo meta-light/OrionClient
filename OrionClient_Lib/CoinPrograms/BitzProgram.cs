@@ -48,6 +48,8 @@ namespace OrionClientLib.CoinPrograms
 
         public static PublicKey ProgramId = new PublicKey("EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd"); // Bitz Program ID
         public static readonly PublicKey NoopId = new PublicKey("F1ULBrY2Tjsmb1L4Wt4vX6UtiWRikLoRFWooSpxMM6nR"); // Bitz Noop ID
+        public static readonly PublicKey BoostProgramId = new PublicKey("eBoFjsXMceooxywb8MeCqRCkQ2JEEsd5AUELXbaQfh8"); // Bitz Boost Program
+        public static PublicKey BoostConfig;
 
         public static readonly double BitzDecimals = Math.Pow(10, 11); //remains unchanged from ORE
         private static readonly byte[] MintNoise = new byte[] { 89, 157, 88, 232, 243, 249, 197, 132, 199, 49, 19, 234, 91, 94, 150, 41 };
@@ -77,6 +79,9 @@ namespace OrionClientLib.CoinPrograms
 
             PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("config") }, ProgramId, out var b, out var n);
             ConfigAddress = b;
+
+            PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("config") }, BoostProgramId, out b, out n);
+            BoostConfig = b;
 
             TreasuryATAId = new PublicKey("BHbThAP7qggM34iznUGwwC23jUtNaFRz5DrPxMGr56bS"); // Bitz Treasury ATA Address
         }
@@ -181,6 +186,8 @@ namespace OrionClientLib.CoinPrograms
                 AccountMeta.Writable(proof, false),
                 AccountMeta.ReadOnly(Instructions, false),
                 AccountMeta.ReadOnly(SlotHashesKey, false),
+                AccountMeta.ReadOnly(TreasuryId, false),        // Account #7 - Treasury
+                AccountMeta.Writable(TreasuryATAId, false),     // Account #8 - Treasury ATA (writable)
             };
 
             byte[] data = new byte[25];
@@ -236,7 +243,7 @@ namespace OrionClientLib.CoinPrograms
 
         public static PublicKey DeriveBoost(PublicKey mint)
         {
-            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("boost"), mint.KeyBytes }, ProgramId, out PublicKey address, out byte nonce))
+            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("boost"), mint.KeyBytes }, BoostProgramId, out PublicKey address, out byte nonce))
             {
                 return address;
             }
@@ -246,7 +253,7 @@ namespace OrionClientLib.CoinPrograms
 
         public static PublicKey DeriveCheckpoint(PublicKey boost)
         {
-            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("checkpoint"), boost.KeyBytes }, ProgramId, out PublicKey address, out byte nonce))
+            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("checkpoint"), boost.KeyBytes }, BoostProgramId, out PublicKey address, out byte nonce))
             {
                 return address;
             }
@@ -256,7 +263,7 @@ namespace OrionClientLib.CoinPrograms
 
         public static PublicKey DeriveStakeAccount(PublicKey boost, PublicKey authority)
         {
-            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("stake"), authority.KeyBytes, boost.KeyBytes }, ProgramId, out PublicKey address, out byte nonce))
+            if (PublicKey.TryFindProgramAddress(new List<byte[]> { Encoding.UTF8.GetBytes("stake"), authority.KeyBytes, boost.KeyBytes }, BoostProgramId, out PublicKey address, out byte nonce))
             {
                 return address;
             }

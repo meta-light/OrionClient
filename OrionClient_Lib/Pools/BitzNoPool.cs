@@ -30,9 +30,9 @@ namespace OrionClientLib.Pools
         public override bool RequiresKeypair => true;
 
         public override Dictionary<string, string> Features => new Dictionary<string, string>
-        {
-            { "Solo Mining", "Mine directly to your wallet without a pool" },
-            { "No Pool Fees", "Keep 100% of your mining rewards" },
+       {
+           { "Solo Mining", "Mine directly to your wallet without a pool" },
+           { "No Pool Fees", "Keep 100% of your mining rewards" },
             { "Eclipse Network", "Mines on Eclipse mainnet blockchain" }
         };
 
@@ -41,23 +41,23 @@ namespace OrionClientLib.Pools
         public override event EventHandler PauseMining;
         public override event EventHandler ResumeMining;
 
-        private Wallet _wallet;
-        private string _publicKey;
+       private Wallet _wallet;
+       private string _publicKey;
         private IRpcClient _rpcClient;
         private Settings _settings;
-        private System.Timers.Timer _challengeTimer;
-        private int _challengeId = 0;
-        private byte[] _currentChallenge;
+       private System.Timers.Timer _challengeTimer;
+       private int _challengeId = 0;
+       private byte[] _currentChallenge;
         private DifficultyInfo _bestDifficulty;
-        private double _miningRewards = 0;
-        private double _walletBalance = 0;
+       private double _miningRewards = 0;
+       private double _walletBalance = 0;
         private PublicKey _proofAccount;
         private bool _proofAccountExists = false;
 
         public override void SetWalletInfo(Wallet wallet, string publicKey)
-        {
-            _wallet = wallet;
-            _publicKey = publicKey;
+       {
+           _wallet = wallet;
+           _publicKey = publicKey;
 
             if (_wallet != null)
             {
@@ -142,7 +142,7 @@ namespace OrionClientLib.Pools
                     _bestDifficulty = null;
                     GenerateNewChallenge();
                 };
-                _challengeTimer.Start();
+           _challengeTimer.Start();
 
                 // Start wallet balance updates
                 _ = Task.Run(async () =>
@@ -155,9 +155,9 @@ namespace OrionClientLib.Pools
                 });
 
                 // Generate initial challenge
-                GenerateNewChallenge();
+           GenerateNewChallenge();
 
-                return true;
+           return true;
             }
             catch (Exception ex)
             {
@@ -167,27 +167,27 @@ namespace OrionClientLib.Pools
         }
 
         public override async Task<bool> DisconnectAsync()
-        {
-            _challengeTimer?.Stop();
-            _challengeTimer?.Dispose();
-            return true;
-        }
+       {
+           _challengeTimer?.Stop();
+           _challengeTimer?.Dispose();
+           return true;
+       }
 
         public override async Task<double> GetFeeAsync(CancellationToken token)
-        {
+       {
             return 0.0; // No fees for solo mining
-        }
+       }
 
         public override async Task<(bool success, string errorMessage)> SetupAsync(CancellationToken token, bool initialSetup = false)
-        {
+       {
             Console.WriteLine("DEBUG: BitzNoPool.SetupAsync called!");
             Console.WriteLine($"DEBUG: initialSetup = {initialSetup}");
             
-            if (_wallet == null)
-            {
+           if (_wallet == null)
+           {
                 Console.WriteLine("DEBUG: Wallet is null, returning error");
-                return (false, "A full keypair is required for solo mining");
-            }
+               return (false, "A full keypair is required for solo mining");
+           }
 
             try
             {
@@ -201,9 +201,9 @@ namespace OrionClientLib.Pools
                 if (_settings == null || _rpcClient == null)
                 {
                     Console.WriteLine("DEBUG: Initializing settings and RPC client...");
-                    _settings = await Settings.LoadAsync();
-                    BitzProgram.SetBitzRpcSettings(_settings.BitzRPCSetting);
-                    _rpcClient = BitzProgram.GetRpcClient();
+               _settings = await Settings.LoadAsync();
+               BitzProgram.SetBitzRpcSettings(_settings.BitzRPCSetting);
+               _rpcClient = BitzProgram.GetRpcClient();
                     
                     Console.WriteLine($"DEBUG: Settings loaded: {_settings != null}");
                     Console.WriteLine($"DEBUG: RPC Client initialized: {_rpcClient != null}");
@@ -214,6 +214,9 @@ namespace OrionClientLib.Pools
                 Console.WriteLine("DEBUG: Checking if proof account already exists...");
                 await CheckProofAccountAsync();
                 Console.WriteLine($"DEBUG: Proof account exists check result: {_proofAccountExists}");
+
+                // Get on-chain data for debugging
+                await LogOnChainDataAsync();
 
                 // Ensure proof account exists
                 if (!_proofAccountExists)
@@ -235,7 +238,7 @@ namespace OrionClientLib.Pools
                 }
 
                 Console.WriteLine("DEBUG: Setup completed successfully");
-                return (true, string.Empty);
+           return (true, string.Empty);
             }
             catch (Exception ex)
             {
@@ -249,8 +252,8 @@ namespace OrionClientLib.Pools
         public override async Task<(bool success, string errorMessage)> OptionsAsync(CancellationToken token)
         {
             // Could add balance viewing, etc. here later
-            return (true, string.Empty);
-        }
+           return (true, string.Empty);
+       }
 
         public override string[] TableHeaders()
         {
@@ -482,15 +485,15 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"Stack trace: {ex.StackTrace}");
                 return false;
             }
-        }
+       }
 
-        private void GenerateNewChallenge()
-        {
+       private void GenerateNewChallenge()
+       {
             try
             {
                 // Generate challenge based on current time and randomness (like ORE does)
-                _challengeId++;
-                _currentChallenge = new byte[32];
+           _challengeId++;
+           _currentChallenge = new byte[32];
                 
                 // Use a combination of current timestamp and randomness for challenge
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -501,10 +504,10 @@ namespace OrionClientLib.Pools
                 Array.Copy(timestampBytes, 0, _currentChallenge, 0, 8);
                 Array.Copy(randomBytes, 0, _currentChallenge, 8, 24);
 
-                OnChallengeUpdate?.Invoke(this, new NewChallengeInfo
-                {
-                    ChallengeId = _challengeId,
-                    Challenge = _currentChallenge,
+           OnChallengeUpdate?.Invoke(this, new NewChallengeInfo
+           {
+               ChallengeId = _challengeId,
+               Challenge = _currentChallenge,
                     StartNonce = 0,
                     EndNonce = ulong.MaxValue,
                     TotalCPUNonces = ulong.MaxValue / 2 
@@ -531,6 +534,13 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"Submitting solution to Bitz bus: {bus} (Program: {BitzProgram.ProgramId})");
                 
                 // Create mine transaction using BITZ PROGRAM ID
+                Console.WriteLine($"DEBUG: Creating mine instruction with accounts:");
+                Console.WriteLine($"DEBUG: - Signer: {_wallet.Account.PublicKey}");
+                Console.WriteLine($"DEBUG: - Bus: {bus}");
+                Console.WriteLine($"DEBUG: - Proof: {_proofAccount}");
+                Console.WriteLine($"DEBUG: - Solution length: {info.BestSolution.Length}");
+                Console.WriteLine($"DEBUG: - Nonce: {info.BestNonce}");
+                
                 var mineInstruction = BitzProgram.Mine(
                     BitzProgram.ProgramId, // BITZ Program ID: EorefDWqzJK31vLxaqkDGsx3CRKqPVpWfuJL7qBQMZYd (NOT ORE)
                     _wallet.Account.PublicKey,
@@ -539,6 +549,12 @@ namespace OrionClientLib.Pools
                     info.BestSolution,
                     info.BestNonce
                 );
+
+                // Add Auth instruction (like ORE does)
+                var authInstruction = BitzProgram.Auth(_proofAccount);
+                
+                Console.WriteLine($"DEBUG: Mine instruction accounts: {mineInstruction.Keys.Count}");
+                Console.WriteLine($"DEBUG: Auth instruction accounts: {authInstruction.Keys.Count}");
 
                 // Get recent blockhash from ECLIPSE blockchain (not Solana) using correct method
                 var recentBlockhash = await _rpcClient.GetLatestBlockHashAsync();
@@ -552,7 +568,8 @@ namespace OrionClientLib.Pools
                 var transactionBuilder = new TransactionBuilder()
                     .SetRecentBlockHash(recentBlockhash.Result.Value.Blockhash)
                     .SetFeePayer(_wallet.Account.PublicKey)
-                    .AddInstruction(mineInstruction);
+                    .AddInstruction(authInstruction)  // Add auth instruction first
+                    .AddInstruction(mineInstruction); // Then mine instruction
 
                 // Build and sign transaction
                 var transactionBytes = transactionBuilder.Build(_wallet.Account);
@@ -619,5 +636,84 @@ namespace OrionClientLib.Pools
                 _logger.Log(LogLevel.Debug, $"Error updating Bitz wallet balance: {ex.Message}");
             }
         }
-    }
+
+        private async Task LogOnChainDataAsync()
+        {
+            try
+            {
+                Console.WriteLine("=== ON-CHAIN DEBUG DATA ===");
+                
+                // 1. Check Bitz Config Account
+                Console.WriteLine($"DEBUG: Fetching Bitz Config Account: {BitzProgram.ConfigAddress}");
+                var configInfo = await _rpcClient.GetAccountInfoAsync(BitzProgram.ConfigAddress);
+                if (configInfo.WasSuccessful && configInfo.Result?.Value != null)
+                {
+                    Console.WriteLine($"DEBUG: Config Account - Owner: {configInfo.Result.Value.Owner}");
+                    Console.WriteLine($"DEBUG: Config Account - Lamports: {configInfo.Result.Value.Lamports}");
+                    Console.WriteLine($"DEBUG: Config Account - Data Length: {configInfo.Result.Value.Data?.Count ?? 0}");
+                    Console.WriteLine($"DEBUG: Config Account - Executable: {configInfo.Result.Value.Executable}");
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: Config Account - NOT FOUND or RPC failed: {configInfo.Reason}");
+                }
+
+                // 2. Check our Proof Account details
+                Console.WriteLine($"DEBUG: Fetching Proof Account: {_proofAccount}");
+                var proofInfo = await _rpcClient.GetAccountInfoAsync(_proofAccount);
+                if (proofInfo.WasSuccessful && proofInfo.Result?.Value != null)
+                {
+                    Console.WriteLine($"DEBUG: Proof Account - Owner: {proofInfo.Result.Value.Owner}");
+                    Console.WriteLine($"DEBUG: Proof Account - Lamports: {proofInfo.Result.Value.Lamports}");
+                    Console.WriteLine($"DEBUG: Proof Account - Data Length: {proofInfo.Result.Value.Data?.Count ?? 0}");
+                    Console.WriteLine($"DEBUG: Proof Account - Executable: {proofInfo.Result.Value.Executable}");
+                    
+                    // If data exists, show first few bytes
+                    if (proofInfo.Result.Value.Data?.Count > 0)
+                    {
+                        Console.WriteLine($"DEBUG: Proof Account - First Data Element: {proofInfo.Result.Value.Data[0]}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: Proof Account - NOT FOUND or RPC failed: {proofInfo.Reason}");
+                }
+
+                // 3. Check Bitz Program Account
+                Console.WriteLine($"DEBUG: Fetching Bitz Program: {BitzProgram.ProgramId}");
+                var programInfo = await _rpcClient.GetAccountInfoAsync(BitzProgram.ProgramId);
+                if (programInfo.WasSuccessful && programInfo.Result?.Value != null)
+                {
+                    Console.WriteLine($"DEBUG: Bitz Program - Owner: {programInfo.Result.Value.Owner}");
+                    Console.WriteLine($"DEBUG: Bitz Program - Lamports: {programInfo.Result.Value.Lamports}");
+                    Console.WriteLine($"DEBUG: Bitz Program - Executable: {programInfo.Result.Value.Executable}");
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: Bitz Program - NOT FOUND or RPC failed: {programInfo.Reason}");
+                }
+
+                // 4. Check a random Bus Account
+                var randomBus = BitzProgram.BusIds[0];
+                Console.WriteLine($"DEBUG: Fetching Bus Account: {randomBus}");
+                var busInfo = await _rpcClient.GetAccountInfoAsync(randomBus);
+                if (busInfo.WasSuccessful && busInfo.Result?.Value != null)
+                {
+                    Console.WriteLine($"DEBUG: Bus Account - Owner: {busInfo.Result.Value.Owner}");
+                    Console.WriteLine($"DEBUG: Bus Account - Lamports: {busInfo.Result.Value.Lamports}");
+                    Console.WriteLine($"DEBUG: Bus Account - Data Length: {busInfo.Result.Value.Data?.Count ?? 0}");
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: Bus Account - NOT FOUND or RPC failed: {busInfo.Reason}");
+                }
+
+                Console.WriteLine("=== END ON-CHAIN DEBUG ===");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DEBUG: Error fetching on-chain data: {ex.Message}");
+            }
+       }
+   }
 }
