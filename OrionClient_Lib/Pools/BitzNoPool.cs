@@ -218,6 +218,43 @@ namespace OrionClientLib.Pools
                 // Get on-chain data for debugging
                 await LogOnChainDataAsync();
 
+                // Also check the mystery accounts from the real Bitz transaction
+                Console.WriteLine("=== MYSTERY ACCOUNTS FROM REAL BITZ TX ===");
+                
+                // Account #7 from real transaction: 5wpgyJFziVdB2RHW3qUx7teZxCax5FsniZxELdxiKUFD
+                var account7 = new PublicKey("5wpgyJFziVdB2RHW3qUx7teZxCax5FsniZxELdxiKUFD");
+                Console.WriteLine($"DEBUG: Fetching Account #7: {account7}");
+                var account7Info = await _rpcClient.GetAccountInfoAsync(account7);
+                if (account7Info.WasSuccessful && account7Info.Result?.Value != null)
+                {
+                    Console.WriteLine($"DEBUG: Account #7 - Owner: {account7Info.Result.Value.Owner}");
+                    Console.WriteLine($"DEBUG: Account #7 - Lamports: {account7Info.Result.Value.Lamports}");
+                    Console.WriteLine($"DEBUG: Account #7 - Data Length: {account7Info.Result.Value.Data?.Count ?? 0}");
+                    Console.WriteLine($"DEBUG: Account #7 - Executable: {account7Info.Result.Value.Executable}");
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: Account #7 - NOT FOUND or RPC failed: {account7Info.Reason}");
+                }
+
+                // Account #8 from real transaction: 3YiLgGTS23imzTfkTZhfTzNDtiz1mrrQoB4f3yyFUByE
+                var account8 = new PublicKey("3YiLgGTS23imzTfkTZhfTzNDtiz1mrrQoB4f3yyFUByE");
+                Console.WriteLine($"DEBUG: Fetching Account #8: {account8}");
+                var account8Info = await _rpcClient.GetAccountInfoAsync(account8);
+                if (account8Info.WasSuccessful && account8Info.Result?.Value != null)
+                {
+                    Console.WriteLine($"DEBUG: Account #8 - Owner: {account8Info.Result.Value.Owner}");
+                    Console.WriteLine($"DEBUG: Account #8 - Lamports: {account8Info.Result.Value.Lamports}");
+                    Console.WriteLine($"DEBUG: Account #8 - Data Length: {account8Info.Result.Value.Data?.Count ?? 0}");
+                    Console.WriteLine($"DEBUG: Account #8 - Executable: {account8Info.Result.Value.Executable}");
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: Account #8 - NOT FOUND or RPC failed: {account8Info.Reason}");
+                }
+
+                Console.WriteLine("=== END MYSTERY ACCOUNTS ===");
+
                 // Ensure proof account exists
                 if (!_proofAccountExists)
                 {
